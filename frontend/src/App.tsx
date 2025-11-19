@@ -11,8 +11,8 @@ type SWOT = {
 
 type AnalysisResult = {
   model_version: string;
+  company_name: string;
   risk_score_0_to_10: number;
-  estimated_downgrade_probability_bucket: string;
   overall_risk_assessment_text: string;
   key_downgrade_drivers: string[];
   swot: SWOT;
@@ -22,12 +22,20 @@ type AnalysisResult = {
 const RiskScoreCard: React.FC<{ result: AnalysisResult }> = ({ result }) => {
   const score = result.risk_score_0_to_10 ?? 0;
 
+  // Neue Schwellen:
+  // < 5.0  -> niedriges Risiko
+  // 5.0–7.4 -> moderates Risiko
+  // >= 7.5 -> hohes Risiko
   let level: "low" | "medium" | "high" = "low";
-  if (score >= 7) level = "high";
-  else if (score >= 4) level = "medium";
+  if (score >= 7.5) level = "high";
+  else if (score >= 5) level = "medium";
 
   const levelLabel =
-    level === "low" ? "Niedrig" : level === "medium" ? "Erhöht" : "Hoch";
+    level === "low"
+      ? "Niedriges Downgrade-Risiko"
+      : level === "medium"
+      ? "Moderates Downgrade-Risiko"
+      : "Hohes Downgrade-Risiko";
 
   const levelColor =
     level === "low"
@@ -49,11 +57,7 @@ const RiskScoreCard: React.FC<{ result: AnalysisResult }> = ({ result }) => {
           <span
             className={`px-2 py-0.5 rounded-full text-[11px] font-semibold text-white ${levelColor}`}
           >
-            {levelLabel}es Risiko
-          </span>
-          <span className="text-[11px] text-slate-500">
-            Geschätzter Bucket:{" "}
-            {result.estimated_downgrade_probability_bucket}
+            {levelLabel}
           </span>
         </div>
       </div>
@@ -83,7 +87,7 @@ const SWOTGrid: React.FC<{ swot: SWOT }> = ({ swot }) => {
 
   const renderList = (items: string[]) =>
     items && items.length ? (
-      <ul className="list-disc list-inside text-xs text-slate-600 space-y-1">
+      <ul className="list-disc list-outside pl-4 text-xs text-slate-600 space-y-1">
         {items.map((i, idx) => (
           <li key={idx}>{i}</li>
         ))}
@@ -128,6 +132,7 @@ const App: React.FC = () => {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Result-Container inkl. Überschrift, damit sie auch im PDF ist
   const resultRef = useRef<HTMLDivElement | null>(null);
 
   const handleFile = (files: FileList | null) => {
@@ -152,10 +157,13 @@ const App: React.FC = () => {
     formData.append("file", file);
 
     try {
-      const res = await fetch("https://credit-risk-app-nqow.onrender.com/api/analyze-report", {
-        method: "POST",
-        body: formData,
-      });
+      const res = await fetch(
+        "https://credit-risk-app-nqow.onrender.com/api/analyze-report",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
       if (!res.ok) {
         const data = await res.json().catch(() => null);
         throw new Error(data?.detail || "Fehler bei der Analyse.");
@@ -199,7 +207,7 @@ const App: React.FC = () => {
         // Passt auf eine Seite
         pdf.addImage(imgData, "PNG", 10, marginTop, imgWidth, imgHeight);
       } else {
-        // Einfache Multi-Page-Variante (ggf. später verfeinern)
+        // Einfache Multi-Page-Variante
         let position = marginTop;
         let remainingHeight = imgHeight;
 
@@ -326,47 +334,52 @@ const App: React.FC = () => {
               </button>
             </div>
 
-            <section
-              ref={resultRef}
-              className="grid grid-cols-1 md:grid-cols-2 gap-6"
-            >
-              {/* Score & Bewertung */}
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4">
-                <h3 className="text-md font-semibold text-slate-900">
-                  Downgrade-Risikoscore
-                </h3>
+            {/* Dieser Container kommt vollständig in den PDF-Export */}
+            <div ref={resultRef} className="space-y-4">
+              <h2 className="text-xl font-semibold text-slate-900">
+                Kreditrisikoanalyse für{" "}
+                {result.company_name || "das Unternehmen"}
+              </h2>
 
-                <RiskScoreCard result={result} />
+              <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Score & Bewertung */}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4">
+                  <h3 className="text-md font-semibold text-slate-900">
+                    Downgrade-Risikoscore
+                  </h3>
 
-                <div>
-                  <h4 className="text-sm font-medium text-slate-800 mb-1">
-                    Verbale Einschätzung
-                  </h4>
-                  <p className="text-sm text-slate-600">
-                    {result.overall_risk_assessment_text}
-                  </p>
+                  <RiskScoreCard result={result} />
+
+                  <div>
+                    <h4 className="text-sm font-medium text-slate-800 mb-1">
+                      Verbale Einschätzung
+                    </h4>
+                    <p className="text-sm text-slate-600">
+                      {result.overall_risk_assessment_text}
+                    </p>
+                  </div>
+
+                  <div>
+                    <h4 className="text-sm font-medium text-slate-800 mb-1">
+                      Wichtige Downgrade-Treiber
+                    </h4>
+                    <ul className="list-disc list-outside pl-4 text-sm text-slate-600 space-y-1">
+                      {result.key_downgrade_drivers.map((item, idx) => (
+                        <li key={idx}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
 
-                <div>
-                  <h4 className="text-sm font-medium text-slate-800 mb-1">
-                    Wichtige Downgrade-Treiber
-                  </h4>
-                  <ul className="list-disc list-inside text-sm text-slate-600 space-y-1">
-                    {result.key_downgrade_drivers.map((item, idx) => (
-                      <li key={idx}>{item}</li>
-                    ))}
-                  </ul>
+                {/* SWOT */}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                  <h3 className="text-md font-semibold text-slate-900 mb-3">
+                    SWOT-Analyse (aus Sicht des Kreditrisikos)
+                  </h3>
+                  <SWOTGrid swot={result.swot} />
                 </div>
-              </div>
-
-              {/* SWOT */}
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                <h3 className="text-md font-semibold text-slate-900 mb-3">
-                  SWOT-Analyse (aus Sicht des Kreditrisikos)
-                </h3>
-                <SWOTGrid swot={result.swot} />
-              </div>
-            </section>
+              </section>
+            </div>
           </>
         )}
       </main>
