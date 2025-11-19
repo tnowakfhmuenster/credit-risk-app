@@ -152,7 +152,7 @@ const App: React.FC = () => {
     formData.append("file", file);
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/analyze-report", {
+      const res = await fetch("https://credit-risk-app-nqow.onrender.com/api/analyse-report", {
         method: "POST",
         body: formData,
       });
