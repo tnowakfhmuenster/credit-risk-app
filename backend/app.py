@@ -5,7 +5,6 @@ import os
 import base64
 import logging
 from typing import Optional, Dict, Any
-import re
 
 import requests
 import json
@@ -93,8 +92,9 @@ def query_model_with_pdf_for_score_and_swot(
 ) -> Dict[str, Any]:
     """
     Sendet eine PDF an das LLM über OpenRouter und erwartet ein JSON mit:
+      - model_version
+      - company_name (z.B. "Adidas AG")
       - risk_score_0_to_10
-      - estimated_downgrade_probability_bucket
       - overall_risk_assessment_text
       - key_downgrade_drivers
       - swot: {strengths, weaknesses, opportunities, threats}
@@ -131,7 +131,9 @@ def query_model_with_pdf_for_score_and_swot(
         "1. Bestimme einen Risikoscore von 0 bis 10, der die Wahrscheinlichkeit "
         "für ein Rating-Downgrade des Issuer Credit Ratings im Folgejahr beschreibt "
         "(0 = kein erkennbares Risiko, 10 = sehr hohes Risiko).\n"
-        "2. Erstelle eine SWOT-Analyse aus Sicht des Kreditrisikos:\n"
+        "2. Bestimme den vollständigen offiziellen Unternehmensnamen inklusive Rechtsform "
+        "(z.B. \"Adidas AG\") so wie er im Lagebericht verwendet wird.\n"
+        "3. Erstelle eine SWOT-Analyse aus Sicht des Kreditrisikos:\n"
         "   - Stärken (risikomindernde Faktoren im Unternehmen)\n"
         "   - Schwächen (risikoerhöhende interne Faktoren)\n"
         "   - Chancen (kreditrisikomindernde externe Entwicklungen)\n"
@@ -142,8 +144,8 @@ def query_model_with_pdf_for_score_and_swot(
         "Gib ausschließlich ein gültiges JSON-Objekt mit genau dieser Struktur zurück:\n"
         "{\n"
         '  \"model_version\": \"<Modellname oder -version>\",\n'
+        '  \"company_name\": \"<Vollständiger Unternehmensname inkl. Rechtsform, z.B. \\\"Adidas AG\\\">\",\n'
         '  \"risk_score_0_to_10\": <Zahl 0-10>,\n'
-        '  \"estimated_downgrade_probability_bucket\": \"<z.B. 0-5%, 5-10%, 10-20%, 20-40%, 40-60%, >60%>\",\n'
         '  \"overall_risk_assessment_text\": \"<kurze verbale Gesamteinschätzung>\",\n'
         '  \"key_downgrade_drivers\": [\"<Stichpunkt 1>\", \"<Stichpunkt 2>\", ...],\n'
         "  \"swot\": {\n"
@@ -158,7 +160,7 @@ def query_model_with_pdf_for_score_and_swot(
 
     user_text = (
         "Analysiere den beigefügten Lagebericht des Unternehmens. "
-        "Bestimme den Risikoscore und erstelle die kreditrisikobezogene SWOT-Analyse. "
+        "Bestimme den Risikoscore, den vollständigen Unternehmensnamen und erstelle die kreditrisikobezogene SWOT-Analyse. "
         "Denke daran: Antworte ausschließlich mit einem JSON-Objekt im vorgegebenen Format."
     )
 
@@ -225,7 +227,7 @@ async def health():
 @app.post("/api/analyze-report")
 async def analyze_report(file: UploadFile = File(...)):
     """
-    Nimmt eine PDF per Upload entgegen, schickt sie an das LLM und gibt Score + SWOT als JSON zurück.
+    Nimmt eine PDF per Upload entgegen, schickt sie an das LLM und gibt Score + SWOT + Firmennamen als JSON zurück.
     """
     if not API_KEY:
         raise HTTPException(status_code=500, detail="OPENROUTER_API_KEY ist nicht gesetzt.")
@@ -252,10 +254,10 @@ async def analyze_report(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=f"Interner Fehler: {e}")
 
 if __name__ == "__main__":
-        import uvicorn
-        uvicorn.run(
-            "app:app",
-            host="127.0.0.1",
-            port=8000,
-            reload=True,
-        )
+    import uvicorn
+    uvicorn.run(
+        "app:app",
+        host="127.0.0.1",
+        port=8000,
+        reload=True,
+    )
