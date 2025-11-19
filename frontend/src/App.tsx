@@ -23,19 +23,19 @@ const RiskScoreCard: React.FC<{ result: AnalysisResult }> = ({ result }) => {
   const score = result.risk_score_0_to_10 ?? 0;
 
   // Neue Schwellen:
-  // < 5.0  -> niedriges Risiko
-  // 5.0–7.4 -> moderates Risiko
-  // >= 7.5 -> hohes Risiko
+  // 0–3  -> geringes Risiko
+  // 4–6  -> moderates Risiko
+  // >=7  -> erhöhtes Risiko
   let level: "low" | "medium" | "high" = "low";
-  if (score >= 7.5) level = "high";
-  else if (score >= 5) level = "medium";
+  if (score >= 7) level = "high";
+  else if (score >= 4) level = "medium";
 
   const levelLabel =
     level === "low"
-      ? "Niedriges Downgrade-Risiko"
+      ? "Geringes Downgrade-Risiko"
       : level === "medium"
       ? "Moderates Downgrade-Risiko"
-      : "Hohes Downgrade-Risiko";
+      : "Erhöhtes Downgrade-Risiko";
 
   const levelColor =
     level === "low"
@@ -55,7 +55,7 @@ const RiskScoreCard: React.FC<{ result: AnalysisResult }> = ({ result }) => {
         </div>
         <div className="flex flex-col items-end gap-1">
           <span
-            className={`px-2 py-0.5 rounded-full text-[11px] font-semibold text-white ${levelColor}`}
+            className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[11px] font-semibold text-white leading-none min-h-[20px] ${levelColor}`}
           >
             {levelLabel}
           </span>
@@ -185,29 +185,25 @@ const App: React.FC = () => {
     try {
       const element = resultRef.current;
 
-      // Element per html2canvas in ein Canvas rendern
       const canvas = await html2canvas(element, {
-        scale: 2, // höhere Auflösung
+        scale: 2,
         useCORS: true,
       });
 
       const imgData = canvas.toDataURL("image/png");
 
-      // A4 im Hochformat (mm)
       const pdf = new jsPDF("p", "mm", "a4");
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
 
-      const imgWidth = pageWidth - 20; // etwas Rand
+      const imgWidth = pageWidth - 20;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
       const marginTop = 10;
 
       if (imgHeight <= pageHeight - marginTop * 2) {
-        // Passt auf eine Seite
         pdf.addImage(imgData, "PNG", 10, marginTop, imgWidth, imgHeight);
       } else {
-        // Einfache Multi-Page-Variante
         let position = marginTop;
         let remainingHeight = imgHeight;
 
@@ -244,9 +240,7 @@ const App: React.FC = () => {
               Qualitative Kreditrisikoanalyse auf Basis von Lageberichten.
             </p>
           </div>
-          <span className="text-xs text-slate-400">
-            Modell: {result?.model_version || "noch keine Analyse"}
-          </span>
+          {/* Modellanzeige oben rechts entfernt */}
         </div>
       </header>
 
