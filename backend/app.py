@@ -24,7 +24,7 @@ PDF_ENGINE = os.getenv("PDF_ENGINE", "pdf-text")  # "pdf-text", "mistral-ocr", "
 HEADERS = {
     "Authorization": f"Bearer {API_KEY}" if API_KEY else "",
     "HTTP-Referer": "http://localhost",
-    "X-Title": "Credit-Rating-Tool",
+    "X-Title": "CreditTrend AI",
     "Content-Type": "application/json",
 }
 
@@ -94,8 +94,9 @@ def query_model_with_pdf_for_score_and_swot(
     Sendet eine PDF an das LLM über OpenRouter und erwartet ein JSON mit:
       - model_version
       - company_name (z.B. "Adidas AG")
+      - company_fiscal_year (z.B. "Geschäftsjahr 2023" oder nur "2023")
       - risk_score_0_to_10 (Ganzzahl 0-10)
-      - overall_risk_assessment_text (ausführliche verbale Einschätzung)
+      - overall_risk_assessment_text (ausführliche verbale Einschätzung, qualitative Faktoren)
       - key_downgrade_drivers (qualitative Treiber)
       - swot: {strengths, weaknesses, opportunities, threats} (qualitative Faktoren)
     """
@@ -123,7 +124,7 @@ def query_model_with_pdf_for_score_and_swot(
             },
         }
 
-    # Prompt: Score + SWOT im JSON-Format
+    # Prompt: Score + SWOT im JSON-Format, mit Fokus auf qualitative Faktoren
     system_prompt = (
         "Du bist ein erfahrener Kreditrisiko-Analyst. "
         "Du analysierst deutsche Lageberichte börsennotierter Unternehmen. "
@@ -133,7 +134,9 @@ def query_model_with_pdf_for_score_and_swot(
         "(0 = kein erkennbares Risiko, 10 = sehr hohes Risiko). Gib den Score als Ganzzahl an.\n"
         "2. Bestimme den vollständigen offiziellen Unternehmensnamen inklusive Rechtsform "
         "(z.B. \"Adidas AG\") so wie er im Lagebericht verwendet wird.\n"
-        "3. Erstelle eine SWOT-Analyse aus Sicht des Kreditrisikos:\n"
+        "3. Bestimme das Geschäftsjahr, auf das sich der Lagebericht bezieht "
+        "(z.B. \"2023\" oder \"Geschäftsjahr 2023\").\n"
+        "4. Erstelle eine SWOT-Analyse aus Sicht des Kreditrisikos:\n"
         "   - Stärken (risikomindernde interne Faktoren im Unternehmen)\n"
         "   - Schwächen (risikoerhöhende interne Faktoren)\n"
         "   - Chancen (kreditrisikomindernde externe Entwicklungen)\n"
@@ -145,11 +148,17 @@ def query_model_with_pdf_for_score_and_swot(
         "Lege den Schwerpunkt klar auf qualitative Faktoren (z.B. Markt- und Wettbewerbsposition, "
         "Geschäftsmodell, Kunden- und Lieferantenabhängigkeiten, Branchen- und Strukturtrends, "
         "Managementeinschätzungen, regulatorische Rahmenbedingungen). "
-        "Verwende keine reinen Kennzahlen- oder Finanzratio-Aufzählungen als Hauptinhalt, "
-        "sondern nutze Kennzahlen nur unterstützend, falls sie für die qualitative Einordnung nötig sind.\n\n"
+        "Verwende Kennzahlen oder Finanzratios nicht als Hauptinhalt.\n\n"
         "Zum Feld \"overall_risk_assessment_text\": Formuliere eine ausführliche verbale Gesamteinschätzung "
         "mit mindestens 3–5 Sätzen, in der du die wesentlichen qualitativen Treiber der Kreditrisikoentwicklung "
-        "zusammenhängend erläuterst und einen Bezug zu den oben genannten Berichtsteilen herstellst.\n\n"
+        "zusammenhängend erläuterst und einen Bezug zu Wirtschaftsbericht, Chancen- und Risikobericht "
+        "sowie Prognosebericht herstellst. Vermeide eine Aufzählung von Kennzahlen.\n\n"
+        "Zum Feld \"key_downgrade_drivers\": Liste die wichtigsten qualitativen Treiber eines möglichen Downgrades auf "
+        "(z.B. Strukturwandel in der Branche, Abhängigkeit von Schlüsselkunden, geopolitische Risiken, "
+        "regulatorische Veränderungen, strategische Unsicherheiten). Verwende keine reinen Aufzählungen "
+        "von Kennzahlen oder Finanzratios.\n\n"
+        "Die SWOT-Analyse soll ebenfalls klar qualitativ ausgerichtet sein und nicht im Vordergrund "
+        "auf Kennzahlen basieren.\n\n"
         "Nutze ausschließlich Informationen aus dem Lagebericht. "
         "Verwende kein externes Weltwissen über das konkrete Unternehmen.\n\n"
         "Antwort-Format:\n"
@@ -157,8 +166,9 @@ def query_model_with_pdf_for_score_and_swot(
         "{\n"
         '  \"model_version\": \"<Modellname oder -version>\",\n'
         '  \"company_name\": \"<Vollständiger Unternehmensname inkl. Rechtsform, z.B. \\\"Adidas AG\\\">\",\n'
+        '  \"company_fiscal_year\": \"<Geschäftsjahr, z.B. \\\"2023\\\" oder \\\"Geschäftsjahr 2023\\\">\",\n'
         '  \"risk_score_0_to_10\": <Ganzzahl 0-10>,\n'
-        '  \"overall_risk_assessment_text\": \"<ausführliche verbale Gesamteinschätzung>\",\n'
+        '  \"overall_risk_assessment_text\": \"<ausführliche verbale, qualitative Gesamteinschätzung>\",\n'
         '  \"key_downgrade_drivers\": [\"<qualitativer Treiber 1>\", \"<qualitativer Treiber 2>\", ...],\n'
         "  \"swot\": {\n"
         '    \"strengths\": [\"<qualitative Stärke 1>\", \"<qualitative Stärke 2>\", ...],\n'
@@ -174,7 +184,8 @@ def query_model_with_pdf_for_score_and_swot(
         "Analysiere den beigefügten Lagebericht des Unternehmens. "
         "Fokussiere dich insbesondere auf Wirtschaftsbericht, Chancen- und Risikobericht "
         "sowie Prognosebericht. Bestimme den Risikoscore (Ganzzahl), den vollständigen "
-        "Unternehmensnamen und erstelle eine qualitative, kreditrisikobezogene SWOT-Analyse. "
+        "Unternehmensnamen, das Geschäftsjahr und erstelle eine qualitative, "
+        "kreditrisikobezogene SWOT-Analyse. "
         "Antworte ausschließlich mit einem JSON-Objekt im vorgegebenen Format."
     )
 
@@ -188,8 +199,8 @@ def query_model_with_pdf_for_score_and_swot(
             {
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": user_text},
-                    file_block,
+                {"type": "text", "text": user_text},
+                file_block,
                 ],
             },
         ],
@@ -223,9 +234,9 @@ def query_model_with_pdf_for_score_and_swot(
 # ============================================================
 # ==================   FASTAPI-APP   =========================
 # ============================================================
-app = FastAPI(title="Credit Risk LLM Analyzer")
+app = FastAPI(title="CreditTrend AI Backend")
 
-# CORS für späteres Frontend (localhost)
+# CORS für späteres Frontend (localhost / Netlify)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # für den Anfang offen, später einschränken
@@ -241,7 +252,7 @@ async def health():
 @app.post("/api/analyze-report")
 async def analyze_report(file: UploadFile = File(...)):
     """
-    Nimmt eine PDF per Upload entgegen, schickt sie an das LLM und gibt Score + SWOT + Firmennamen als JSON zurück.
+    Nimmt eine PDF per Upload entgegen, schickt sie an das LLM und gibt Score + SWOT + Firmendaten als JSON zurück.
     """
     if not API_KEY:
         raise HTTPException(status_code=500, detail="OPENROUTER_API_KEY ist nicht gesetzt.")

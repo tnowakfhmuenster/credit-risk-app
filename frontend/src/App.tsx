@@ -12,6 +12,7 @@ type SWOT = {
 type AnalysisResult = {
   model_version: string;
   company_name: string;
+  company_fiscal_year: string;
   risk_score_0_to_10: number;
   overall_risk_assessment_text: string;
   key_downgrade_drivers: string[];
@@ -333,9 +334,16 @@ const App: React.FC = () => {
             {/* Dieser Container kommt vollständig in den PDF-Export */}
             <div ref={resultRef} className="space-y-4">
               <h2 className="text-xl font-semibold text-slate-900">
-                Kreditrisikoanalyse für{" "}
-                {result.company_name || "das Unternehmen"}
+                Business Risk Report
               </h2>
+              <p className="text-sm text-slate-700">
+                <span className="font-medium">Unternehmen:</span>{" "}
+                {result.company_name || "–"}
+              </p>
+              <p className="text-sm text-slate-700">
+                <span className="font-medium">Geschäftsjahr:</span>{" "}
+                {result.company_fiscal_year || "–"}
+              </p>
 
               <section className="space-y-6">
                 {/* Credit-Deterioration-Analyse (Score & verbale Einschätzung) */}
