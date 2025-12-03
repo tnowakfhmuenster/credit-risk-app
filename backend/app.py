@@ -94,10 +94,10 @@ def query_model_with_pdf_for_score_and_swot(
     Sendet eine PDF an das LLM über OpenRouter und erwartet ein JSON mit:
       - model_version
       - company_name (z.B. "Adidas AG")
-      - risk_score_0_to_10
-      - overall_risk_assessment_text
-      - key_downgrade_drivers
-      - swot: {strengths, weaknesses, opportunities, threats}
+      - risk_score_0_to_10 (Ganzzahl 0-10)
+      - overall_risk_assessment_text (ausführliche verbale Einschätzung)
+      - key_downgrade_drivers (qualitative Treiber)
+      - swot: {strengths, weaknesses, opportunities, threats} (qualitative Faktoren)
     """
 
     if not API_KEY:
@@ -130,14 +130,26 @@ def query_model_with_pdf_for_score_and_swot(
         "Deine Aufgaben:\n"
         "1. Bestimme einen Risikoscore von 0 bis 10, der die Wahrscheinlichkeit "
         "für ein Rating-Downgrade des Issuer Credit Ratings im Folgejahr beschreibt "
-        "(0 = kein erkennbares Risiko, 10 = sehr hohes Risiko).\n"
+        "(0 = kein erkennbares Risiko, 10 = sehr hohes Risiko). Gib den Score als Ganzzahl an.\n"
         "2. Bestimme den vollständigen offiziellen Unternehmensnamen inklusive Rechtsform "
         "(z.B. \"Adidas AG\") so wie er im Lagebericht verwendet wird.\n"
         "3. Erstelle eine SWOT-Analyse aus Sicht des Kreditrisikos:\n"
-        "   - Stärken (risikomindernde Faktoren im Unternehmen)\n"
+        "   - Stärken (risikomindernde interne Faktoren im Unternehmen)\n"
         "   - Schwächen (risikoerhöhende interne Faktoren)\n"
         "   - Chancen (kreditrisikomindernde externe Entwicklungen)\n"
-        "   - Risiken (kreditrisikoerhöhende externe Faktoren).\n"
+        "   - Risiken (kreditrisikoerhöhende externe Faktoren).\n\n"
+        "Fokussiere deine Analyse insbesondere auf die Teile des Lageberichts:\n"
+        "- Wirtschaftsbericht\n"
+        "- Chancen- und Risikobericht\n"
+        "- Prognosebericht\n\n"
+        "Lege den Schwerpunkt klar auf qualitative Faktoren (z.B. Markt- und Wettbewerbsposition, "
+        "Geschäftsmodell, Kunden- und Lieferantenabhängigkeiten, Branchen- und Strukturtrends, "
+        "Managementeinschätzungen, regulatorische Rahmenbedingungen). "
+        "Verwende keine reinen Kennzahlen- oder Finanzratio-Aufzählungen als Hauptinhalt, "
+        "sondern nutze Kennzahlen nur unterstützend, falls sie für die qualitative Einordnung nötig sind.\n\n"
+        "Zum Feld \"overall_risk_assessment_text\": Formuliere eine ausführliche verbale Gesamteinschätzung "
+        "mit mindestens 3–5 Sätzen, in der du die wesentlichen qualitativen Treiber der Kreditrisikoentwicklung "
+        "zusammenhängend erläuterst und einen Bezug zu den oben genannten Berichtsteilen herstellst.\n\n"
         "Nutze ausschließlich Informationen aus dem Lagebericht. "
         "Verwende kein externes Weltwissen über das konkrete Unternehmen.\n\n"
         "Antwort-Format:\n"
@@ -145,14 +157,14 @@ def query_model_with_pdf_for_score_and_swot(
         "{\n"
         '  \"model_version\": \"<Modellname oder -version>\",\n'
         '  \"company_name\": \"<Vollständiger Unternehmensname inkl. Rechtsform, z.B. \\\"Adidas AG\\\">\",\n'
-        '  \"risk_score_0_to_10\": <Zahl 0-10>,\n'
-        '  \"overall_risk_assessment_text\": \"<kurze verbale Gesamteinschätzung>\",\n'
-        '  \"key_downgrade_drivers\": [\"<Stichpunkt 1>\", \"<Stichpunkt 2>\", ...],\n'
+        '  \"risk_score_0_to_10\": <Ganzzahl 0-10>,\n'
+        '  \"overall_risk_assessment_text\": \"<ausführliche verbale Gesamteinschätzung>\",\n'
+        '  \"key_downgrade_drivers\": [\"<qualitativer Treiber 1>\", \"<qualitativer Treiber 2>\", ...],\n'
         "  \"swot\": {\n"
-        '    \"strengths\": [\"<Stärke 1>\", \"<Stärke 2>\", ...],\n'
-        '    \"weaknesses\": [\"<Schwäche 1>\", \"<Schwäche 2>\", ...],\n'
-        '    \"opportunities\": [\"<Chance 1>\", \"<Chance 2>\", ...],\n'
-        '    \"threats\": [\"<Risiko 1>\", \"<Risiko 2>\", ...]\n'
+        '    \"strengths\": [\"<qualitative Stärke 1>\", \"<qualitative Stärke 2>\", ...],\n'
+        '    \"weaknesses\": [\"<qualitative Schwäche 1>\", \"<qualitative Schwäche 2>\", ...],\n'
+        '    \"opportunities\": [\"<qualitative Chance 1>\", \"<qualitative Chance 2>\", ...],\n'
+        '    \"threats\": [\"<qualitatives Risiko 1>\", \"<qualitatives Risiko 2>\", ...]\n'
         "  }\n"
         "}\n"
         "Kein Fließtext außerhalb des JSON, keine Kommentare, keine zusätzlichen Felder."
@@ -160,8 +172,10 @@ def query_model_with_pdf_for_score_and_swot(
 
     user_text = (
         "Analysiere den beigefügten Lagebericht des Unternehmens. "
-        "Bestimme den Risikoscore, den vollständigen Unternehmensnamen und erstelle die kreditrisikobezogene SWOT-Analyse. "
-        "Denke daran: Antworte ausschließlich mit einem JSON-Objekt im vorgegebenen Format."
+        "Fokussiere dich insbesondere auf Wirtschaftsbericht, Chancen- und Risikobericht "
+        "sowie Prognosebericht. Bestimme den Risikoscore (Ganzzahl), den vollständigen "
+        "Unternehmensnamen und erstelle eine qualitative, kreditrisikobezogene SWOT-Analyse. "
+        "Antworte ausschließlich mit einem JSON-Objekt im vorgegebenen Format."
     )
 
     payload = {

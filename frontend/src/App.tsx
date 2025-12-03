@@ -21,8 +21,9 @@ type AnalysisResult = {
 // Komponente für den Risikoscore (Balken + Ampel)
 const RiskScoreCard: React.FC<{ result: AnalysisResult }> = ({ result }) => {
   const score = result.risk_score_0_to_10 ?? 0;
+  const scoreRounded = Math.round(score);
 
-  // Neue Schwellen:
+  // Schwellen:
   // 0–3  -> geringes Risiko
   // 4–6  -> moderates Risiko
   // >=7  -> erhöhtes Risiko
@@ -49,7 +50,7 @@ const RiskScoreCard: React.FC<{ result: AnalysisResult }> = ({ result }) => {
       <div className="flex items-baseline justify-between">
         <div className="flex items-center gap-2">
           <span className="text-3xl font-semibold text-slate-900">
-            {score.toFixed(1)}
+            {scoreRounded}
           </span>
           <span className="text-xs text-slate-500">/ 10</span>
         </div>
@@ -87,17 +88,17 @@ const SWOTGrid: React.FC<{ swot: SWOT }> = ({ swot }) => {
 
   const renderList = (items: string[]) =>
     items && items.length ? (
-      <ul className="list-disc list-outside pl-4 text-xs text-slate-600 space-y-1">
+      <ul className="list-disc list-outside pl-4 text-sm text-slate-600 space-y-1">
         {items.map((i, idx) => (
           <li key={idx}>{i}</li>
         ))}
       </ul>
     ) : (
-      <p className="text-xs text-slate-400">Keine Punkte erkannt.</p>
+      <p className="text-sm text-slate-400">Keine Punkte erkannt.</p>
     );
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
       <div className={cellClass}>
         <h4 className="font-semibold text-emerald-700 text-[13px]">
           Stärken
@@ -234,13 +235,13 @@ const App: React.FC = () => {
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-xl font-semibold text-slate-900">
-              LLM Credit Risk Analyzer
+              CreditTrend AI
             </h1>
             <p className="text-sm text-slate-500">
-              Qualitative Kreditrisikoanalyse auf Basis von Lageberichten.
+              Qualitative Kreditrisikoanalyse von Lageberichten mit Fokus auf
+              Business Risk.
             </p>
           </div>
-          {/* Modellanzeige oben rechts entfernt */}
         </div>
       </header>
 
@@ -254,7 +255,8 @@ const App: React.FC = () => {
           <p className="text-sm text-slate-500 mb-4">
             Ziehe eine PDF-Datei hierher oder klicke in das Feld, um einen
             Lagebericht auszuwählen. Anschließend wird ein Risikoscore für ein
-            mögliches Rating-Downgrade sowie eine SWOT-Analyse erstellt.
+            mögliches Rating-Downgrade sowie eine qualitative SWOT-Analyse des
+            Business Risk erstellt.
           </p>
 
           <div
@@ -335,40 +337,44 @@ const App: React.FC = () => {
                 {result.company_name || "das Unternehmen"}
               </h2>
 
-              <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Score & Bewertung */}
+              <section className="space-y-6">
+                {/* Credit-Deterioration-Analyse (Score & verbale Einschätzung) */}
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4">
                   <h3 className="text-md font-semibold text-slate-900">
-                    Downgrade-Risikoscore
+                    Credit-Deterioration-Analyse
                   </h3>
 
-                  <RiskScoreCard result={result} />
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="text-sm font-medium text-slate-800 mb-1">
+                        Downgrade-Risikoscore (0–10)
+                      </h4>
+                      <RiskScoreCard result={result} />
+                    </div>
 
-                  <div>
-                    <h4 className="text-sm font-medium text-slate-800 mb-1">
-                      Verbale Einschätzung
-                    </h4>
-                    <p className="text-sm text-slate-600">
-                      {result.overall_risk_assessment_text}
-                    </p>
-                  </div>
+                    <div>
+                      <p className="text-sm text-slate-600">
+                        {result.overall_risk_assessment_text}
+                      </p>
+                    </div>
 
-                  <div>
-                    <h4 className="text-sm font-medium text-slate-800 mb-1">
-                      Wichtige Downgrade-Treiber
-                    </h4>
-                    <ul className="list-disc list-outside pl-4 text-sm text-slate-600 space-y-1">
-                      {result.key_downgrade_drivers.map((item, idx) => (
-                        <li key={idx}>{item}</li>
-                      ))}
-                    </ul>
+                    <div>
+                      <h4 className="text-sm font-medium text-slate-800 mb-1">
+                        Potentielle Downgrade-Treiber
+                      </h4>
+                      <ul className="list-disc list-outside pl-4 text-sm text-slate-600 space-y-1">
+                        {result.key_downgrade_drivers.map((item, idx) => (
+                          <li key={idx}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
                 </div>
 
                 {/* SWOT */}
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
                   <h3 className="text-md font-semibold text-slate-900 mb-3">
-                    SWOT-Analyse (aus Sicht des Kreditrisikos)
+                    SWOT-Analyse Business Risk
                   </h3>
                   <SWOTGrid swot={result.swot} />
                 </div>
