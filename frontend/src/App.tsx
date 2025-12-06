@@ -19,65 +19,109 @@ type AnalysisResult = {
   swot: SWOT;
 };
 
-// Komponente für den Risikoscore (Balken + Ampel)
+// =======================
+// Mapping 0–10 -> 1–5
+// =======================
+const mapScoreToCategory = (score: number): number => {
+  const rounded = Math.round(score);
+  const clamped = Math.min(10, Math.max(0, rounded));
+
+  if (clamped <= 2) return 1;       // gering
+  if (clamped === 3) return 2;      // moderat
+  if (clamped === 4) return 3;      // erhöht
+  if (clamped <= 6) return 4;       // hoch (5-6)
+  return 5;                         // sehr hoch (7-10)
+};
+
+const getCategoryLabel = (cat: number): string => {
+  switch (cat) {
+    case 1:
+      return "Geringes Downgrade-Risiko";
+    case 2:
+      return "Moderates Downgrade-Risiko";
+    case 3:
+      return "Erhöhtes Downgrade-Risiko";
+    case 4:
+      return "Hohes Downgrade-Risiko";
+    case 5:
+    default:
+      return "Sehr hohes Downgrade-Risiko";
+  }
+};
+
+const getCategoryColor = (cat: number): string => {
+  switch (cat) {
+    case 1:
+      return "bg-green-500";
+    case 2:
+      return "bg-lime-500";
+    case 3:
+      return "bg-amber-500";
+    case 4:
+      return "bg-orange-500";
+    case 5:
+    default:
+      return "bg-red-500";
+  }
+};
+
+// Komponente für den Risikoscore (Band 1–5 + Anzeige des Rohscores 0–10)
 const RiskScoreCard: React.FC<{ result: AnalysisResult }> = ({ result }) => {
-  const score = result.risk_score_0_to_10 ?? 0;
-  const scoreRounded = Math.round(score);
+  const rawScore = result.risk_score_0_to_10 ?? 0;
+  const rawScoreRounded = Math.round(rawScore);
 
-  // Schwellen:
-  // 0–3  -> geringes Risiko
-  // 4–6  -> moderates Risiko
-  // >=7  -> erhöhtes Risiko
-  let level: "low" | "medium" | "high" = "low";
-  if (score >= 7) level = "high";
-  else if (score >= 4) level = "medium";
+  const category = mapScoreToCategory(rawScore);
+  const categoryLabel = getCategoryLabel(category);
+  const categoryColor = getCategoryColor(category);
 
-  const levelLabel =
-    level === "low"
-      ? "Geringes Downgrade-Risiko"
-      : level === "medium"
-      ? "Moderates Downgrade-Risiko"
-      : "Erhöhtes Downgrade-Risiko";
-
-  const levelColor =
-    level === "low"
-      ? "bg-green-500"
-      : level === "medium"
-      ? "bg-amber-500"
-      : "bg-red-500";
+  // Balkenbreite für 1–5
+  const barWidth = (category / 5) * 100;
 
   return (
     <div className="space-y-3">
       <div className="flex items-baseline justify-between">
         <div className="flex items-center gap-2">
           <span className="text-3xl font-semibold text-slate-900">
-            {scoreRounded}
+            {category}
           </span>
-          <span className="text-xs text-slate-500">/ 10</span>
+          <span className="text-xs text-slate-500">/ 5</span>
         </div>
         <div className="flex flex-col items-end gap-1">
           <span
-            className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[11px] font-semibold text-white leading-none min-h-[20px] ${levelColor}`}
+            className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[11px] font-semibold text-white leading-none min-h-[20px] ${categoryColor}`}
           >
-            {levelLabel}
+            {categoryLabel}
+          </span>
+          <span className="text-[10px] text-slate-400 mt-1">
+            Modellscore: {rawScoreRounded} / 10
           </span>
         </div>
       </div>
 
-      {/* Balkenanzeige */}
+      {/* Balkenanzeige 1–5 */}
       <div className="mt-1">
         <div className="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden">
           <div
             className="h-full rounded-full bg-gradient-to-r from-green-500 via-amber-500 to-red-500"
-            style={{ width: `${(score / 10) * 100}%` }}
+            style={{ width: `${barWidth}%` }}
           />
         </div>
         <div className="flex justify-between text-[10px] text-slate-400 mt-1">
-          <span>0</span>
+          <span>1</span>
+          <span>3</span>
           <span>5</span>
-          <span>10</span>
         </div>
       </div>
+
+      <p className="text-[11px] text-slate-500 mt-1">
+        Skala 1–5 (gering bis sehr hoch), abgeleitet aus einem internen
+        Modellscore von 0–10:
+        {" "}
+        <span className="font-medium">
+          0–2 → 1, 3 → 2, 4 → 3, 5–6 → 4, 7–10 → 5
+        </span>
+        .
+      </p>
     </div>
   );
 };
@@ -256,7 +300,8 @@ const App: React.FC = () => {
           <p className="text-sm text-slate-500 mb-4">
             Ziehe eine PDF-Datei hierher oder klicke in das Feld, um einen
             Lagebericht auszuwählen. Anschließend wird ein Risikoscore für ein
-            mögliches Rating-Downgrade sowie eine qualitative SWOT-Analyse des
+            mögliches Rating-Downgrade ermittelt, der in eine Risiko-Kategorie
+            von 1–5 übertragen wird, sowie eine qualitative SWOT-Analyse des
             Business Risk erstellt.
           </p>
 
@@ -355,7 +400,7 @@ const App: React.FC = () => {
                   <div className="space-y-4">
                     <div>
                       <h4 className="text-sm font-medium text-slate-800 mb-1">
-                        Downgrade-Risikoscore (0–10)
+                        Downgrade-Risiko-Kategorie (1–5)
                       </h4>
                       <RiskScoreCard result={result} />
                     </div>

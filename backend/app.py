@@ -157,6 +157,10 @@ def query_model_with_pdf_for_score_and_swot(
         "(z.B. Strukturwandel in der Branche, Abhängigkeit von Schlüsselkunden, geopolitische Risiken, "
         "regulatorische Veränderungen, strategische Unsicherheiten). Verwende keine reinen Aufzählungen "
         "von Kennzahlen oder Finanzratios.\n\n"
+        "Für jede der vier SWOT-Kategorien (Stärken, Schwächen, Chancen, Risiken) sollst du in der Regel "
+        "mindestens 4–6 Aufzählungspunkte liefern. Jeder Punkt soll ein klar formulierter, qualitativ "
+        "beschreibender Satz oder Halbsatz sein und nicht nur ein einzelnes Stichwort "
+        "(z.B. statt nur \"starke Marke\" besser \"Starke und international bekannte Marke mit hoher Kundenloyalität\").\n\n"
         "Die SWOT-Analyse soll ebenfalls klar qualitativ ausgerichtet sein und nicht im Vordergrund "
         "auf Kennzahlen basieren.\n\n"
         "Nutze ausschließlich Informationen aus dem Lagebericht. "
@@ -185,7 +189,7 @@ def query_model_with_pdf_for_score_and_swot(
         "Fokussiere dich insbesondere auf Wirtschaftsbericht, Chancen- und Risikobericht "
         "sowie Prognosebericht. Bestimme den Risikoscore (Ganzzahl), den vollständigen "
         "Unternehmensnamen, das Geschäftsjahr und erstelle eine qualitative, "
-        "kreditrisikobezogene SWOT-Analyse. "
+        "kreditrisikobezogene SWOT-Analyse mit ausführlichen, beschreibenden Punkten. "
         "Antworte ausschließlich mit einem JSON-Objekt im vorgegebenen Format."
     )
 
@@ -199,8 +203,8 @@ def query_model_with_pdf_for_score_and_swot(
             {
                 "role": "user",
                 "content": [
-                {"type": "text", "text": user_text},
-                file_block,
+                    {"type": "text", "text": user_text},
+                    file_block,
                 ],
             },
         ],
