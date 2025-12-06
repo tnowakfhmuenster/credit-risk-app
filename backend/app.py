@@ -18,7 +18,7 @@ from fastapi.responses import JSONResponse
 API_URL = "https://openrouter.ai/api/v1/chat/completions"
 API_KEY = os.getenv("OPENROUTER_API_KEY")
 
-MODEL = os.getenv("OPENROUTER_MODEL", "google/gemini-2.0-flash-001")
+MODEL = os.getenv("OPENROUTER_MODEL", "openai/gpt-4.1-mini")
 PDF_ENGINE = os.getenv("PDF_ENGINE", "pdf-text")  # "pdf-text", "mistral-ocr", "native"
 
 HEADERS = {
