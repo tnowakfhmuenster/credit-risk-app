@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
@@ -36,7 +36,7 @@ const mapScoreToCategory = (score: number): number => {
 };
 
 // =======================
-// Komponente: Risikoscore 1–5
+// Komponente: Risikoscore 1–5 mit Marker
 // =======================
 const RiskScoreCard: React.FC<{ result: AnalysisResult }> = ({ result }) => {
   const rawScore = result.risk_score_0_to_10 ?? 0;
@@ -80,19 +80,22 @@ const RiskScoreCard: React.FC<{ result: AnalysisResult }> = ({ result }) => {
 };
 
 // =======================
-// SWOT-Grid (Seite 2)
+// SWOT-Grid (zeigt einfach nur, was man ihm gibt)
 // =======================
 const SWOTGrid: React.FC<{ swot: SWOT }> = ({ swot }) => {
-  const renderList = (items: string[]) =>
-    items && items.length ? (
+  const renderList = (items: string[] | undefined) => {
+    const safeItems = items || [];
+
+    return safeItems.length ? (
       <ul className="swot-list">
-        {items.map((i, idx) => (
+        {safeItems.map((i, idx) => (
           <li key={idx}>{i}</li>
         ))}
       </ul>
     ) : (
       <p className="swot-empty">Keine Punkte erkannt.</p>
     );
+  };
 
   return (
     <div className="swot-grid">
@@ -131,9 +134,13 @@ const App: React.FC = () => {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Zwei A4-Seiten für PDF-Export
+  // A4-Seiten für PDF-Export
   const page1Ref = useRef<HTMLDivElement | null>(null);
   const page2Ref = useRef<HTMLDivElement | null>(null);
+  const page3Ref = useRef<HTMLDivElement | null>(null);
+
+  // Flag: braucht SWOT eine dritte Seite (Chancen & Risiken)?
+  const [needsThirdPage, setNeedsThirdPage] = useState(false);
 
   const handleFile = (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -145,6 +152,7 @@ const App: React.FC = () => {
     setError(null);
     setFile(f);
     setResult(null);
+    setNeedsThirdPage(false);
   };
 
   const handleUpload = async () => {
@@ -152,6 +160,7 @@ const App: React.FC = () => {
     setLoading(true);
     setError(null);
     setResult(null);
+    setNeedsThirdPage(false);
 
     const formData = new FormData();
     formData.append("file", file);
@@ -176,6 +185,24 @@ const App: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // Nach dem Rendern von Seite 2 prüfen wir, ob die SWOT-Seite überläuft.
+  // Wenn ja → dritte Seite aktivieren (Chancen & Risiken).
+  useEffect(() => {
+    if (!result) {
+      setNeedsThirdPage(false);
+      return;
+    }
+    if (!page2Ref.current) return;
+    if (needsThirdPage) return; // bereits gesplittet, nicht erneut prüfen
+
+    const el = page2Ref.current;
+    const hasOverflow = el.scrollHeight > el.clientHeight + 1;
+
+    if (hasOverflow) {
+      setNeedsThirdPage(true);
+    }
+  }, [result, needsThirdPage]);
 
   const handleExportPdf = async () => {
     if (!result || !page1Ref.current || !page2Ref.current) {
@@ -210,6 +237,18 @@ const App: React.FC = () => {
         pdf.addImage(imgData2, "PNG", 0, 0, pageWidth, pageHeight);
       }
 
+      // Seite 3 (nur Chancen & Risiken), nur wenn vorhanden
+      if (page3Ref.current) {
+        const canvas3 = await html2canvas(page3Ref.current, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: "#ffffff",
+        });
+        const imgData3 = canvas3.toDataURL("image/png");
+        pdf.addPage();
+        pdf.addImage(imgData3, "PNG", 0, 0, pageWidth, pageHeight);
+      }
+
       const filename = `CreditRisk_Report_${new Date()
         .toISOString()
         .slice(0, 10)}.pdf`;
@@ -219,6 +258,35 @@ const App: React.FC = () => {
       alert("Beim PDF-Export ist ein Fehler aufgetreten.");
     }
   };
+
+  // Sicheres SWOT-Objekt
+  const safeSwot: SWOT = result?.swot || {
+    strengths: [],
+    weaknesses: [],
+    opportunities: [],
+    threats: [],
+  };
+
+  // Wenn eine dritte Seite nötig ist:
+  // Seite 2 → Stärken & Schwächen
+  // Seite 3 → Chancen & Risiken
+  const swotForPage2: SWOT = needsThirdPage
+    ? {
+        strengths: safeSwot.strengths,
+        weaknesses: safeSwot.weaknesses,
+        opportunities: [],
+        threats: [],
+      }
+    : safeSwot;
+
+  const swotForPage3: SWOT | null = needsThirdPage
+    ? {
+        strengths: [],
+        weaknesses: [],
+        opportunities: safeSwot.opportunities,
+        threats: safeSwot.threats,
+      }
+    : null;
 
   return (
     <div className="min-h-screen bg-slate-100">
@@ -328,7 +396,7 @@ const App: React.FC = () => {
               <div ref={page1Ref} className="report-a4">
                 <div className="report-inner text-[11px]">
                   {/* Kopfbereich */}
-                  <header className="flex items-start justify-between mb-4">
+                  <header className="flex items-start justify-between mb-2">
                     <div>
                       <h2 className="report-title">Business Risk Report</h2>
 
@@ -353,7 +421,7 @@ const App: React.FC = () => {
                   </header>
 
                   {/* Credit-Deterioration-Analyse */}
-                  <section className="mt-4">
+                  <section className="mt-2">
                     <h3 className="report-section-title mb-2">
                       Credit-Deterioration-Analyse
                     </h3>
@@ -379,7 +447,7 @@ const App: React.FC = () => {
                         <p className="report-body-text font-semibold mb-1">
                           Potentielle Downgrade-Treiber
                         </p>
-                        <ul className="report-list list-disc list-outside pl-4 space-y-1">
+                        <ul className="report-list list-disc list-outside space-y-1">
                           {(result.key_downgrade_drivers || []).map(
                             (item, idx) => (
                               <li key={idx}>{item}</li>
@@ -393,12 +461,12 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            {/* Seite 2: SWOT-Analyse */}
+            {/* Seite 2: SWOT-Analyse (ggf. nur Stärken & Schwächen) */}
             <div className="flex justify-center mt-8">
               <div ref={page2Ref} className="report-a4">
                 <div className="report-inner text-[11px]">
-                  {/* Kopfbereich (wiederholt) */}
-                  <header className="flex items-start justify-between mb-4">
+                  {/* Kopfbereich */}
+                  <header className="flex items-start justify-between mb-2">
                     <div>
                       <h2 className="report-title">Business Risk Report</h2>
 
@@ -422,25 +490,63 @@ const App: React.FC = () => {
                     <div className="report-brand">CreditTrend&nbsp;AI</div>
                   </header>
 
-                  {/* SWOT-Analyse */}
-                  <section className="mt-4">
+                  {/* SWOT-Analyse (Seite 2) */}
+                  <section className="mt-2">
                     <h3 className="report-section-title mb-3">
                       SWOT-Analyse Business Risk
+                      {needsThirdPage ? " – Teil 1" : ""}
                     </h3>
-                    <SWOTGrid
-                      swot={
-                        result.swot || {
-                          strengths: [],
-                          weaknesses: [],
-                          opportunities: [],
-                          threats: [],
-                        }
-                      }
-                    />
+                    <SWOTGrid swot={swotForPage2} />
                   </section>
                 </div>
               </div>
             </div>
+
+            {/* Seite 3: nur Chancen & Risiken, falls nötig */}
+            {needsThirdPage && swotForPage3 && (
+              <div className="flex justify-center mt-8">
+                <div ref={page3Ref} className="report-a4">
+                  <div className="report-inner text-[11px]">
+                    {/* Kopfbereich */}
+                    <header className="flex items-start justify-between mb-2">
+                      <div>
+                        <h2 className="report-title">Business Risk Report</h2>
+
+                        <div className="mb-1 flex items-center">
+                          <span className="report-company-label">
+                            Unternehmen:
+                          </span>
+                          <span className="report-company-name">
+                            {result.company_name || "–"}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center">
+                          <span className="report-fy-label">
+                            Geschäftsjahr:
+                          </span>
+                          <span className="report-fy-value">
+                            {result.company_fiscal_year || "–"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="report-brand">
+                        CreditTrend&nbsp;AI
+                      </div>
+                    </header>
+
+                    {/* SWOT-Analyse (Seite 3 – Chancen & Risiken) */}
+                    <section className="mt-2">
+                      <h3 className="report-section-title mb-3">
+                        SWOT-Analyse Business Risk – Teil 2
+                      </h3>
+                      <SWOTGrid swot={swotForPage3} />
+                    </section>
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         )}
       </main>
