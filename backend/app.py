@@ -6,12 +6,6 @@ import base64
 import logging
 from typing import Optional, Dict, Any
 
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
-from typing import Dict, List
-
-from pdf_renderer import render_pdf_sync
-
 import requests
 import json
 from fastapi import FastAPI, File, UploadFile, HTTPException
