@@ -209,6 +209,11 @@ const App: React.FC = () => {
     }
 
     try {
+      // Sicherstellen, dass Webfonts geladen sind, bevor wir Screenshots machen
+      if ((document as any).fonts && (document as any).fonts.ready) {
+        await (document as any).fonts.ready;
+      }
+
       // Seite 1 zuerst rendern, um Format für das PDF zu bestimmen
       const canvas1 = await html2canvas(page1Ref.current, {
         scale: 2,
