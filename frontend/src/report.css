@@ -40,6 +40,7 @@
   flex-direction: column;
   height: 100%;
   line-height: 1.35;
+  box-sizing: border-box;
 }
 
 
@@ -114,10 +115,12 @@
 
 .report-body-text {
   font-size: 10px;
+  font-family: "Minion Pro", Georgia, "Times New Roman", serif;
 }
 
 .report-list {
   font-size: 10px;
+  font-family: "Minion Pro", Georgia, "Times New Roman", serif;
 }
 
 
@@ -135,7 +138,7 @@
 .swot-card {
   display: flex;
   flex-direction: column;
-  min-height: 130px; /* später feinjustierbar */
+  min-height: 130px; /* bei Bedarf anpassen */
   border-radius: 2px;
   overflow: hidden;
 }
@@ -172,9 +175,11 @@
 .swot-list li {
   margin-bottom: 2px;
   line-height: 1.25;
+  font-family: "Minion Pro", Georgia, "Times New Roman", serif;
 }
 
 .swot-empty {
   color: #9ca3af;
   font-size: 10px;
+  font-family: "Minion Pro", Georgia, "Times New Roman", serif;
 }

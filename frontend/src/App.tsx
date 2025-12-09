@@ -35,48 +35,15 @@ const mapScoreToCategory = (score: number): number => {
   return 5; // sehr hoch (7-10)
 };
 
-const getCategoryLabel = (cat: number): string => {
-  switch (cat) {
-    case 1:
-      return "Geringes Downgrade-Risiko";
-    case 2:
-      return "Moderates Downgrade-Risiko";
-    case 3:
-      return "Erhöhtes Downgrade-Risiko";
-    case 4:
-      return "Hohes Downgrade-Risiko";
-    case 5:
-    default:
-      return "Sehr hohes Downgrade-Risiko";
-  }
-};
-
-const getCategoryColor = (cat: number): string => {
-  switch (cat) {
-    case 1:
-      return "bg-green-500";
-    case 2:
-      return "bg-lime-500";
-    case 3:
-      return "bg-amber-500";
-    case 4:
-      return "bg-orange-500";
-    case 5:
-    default:
-      return "bg-red-500";
-  }
-};
-
-// Komponente für den Risikoscore (nur 1–5 sichtbar)
+// =======================
+// Komponente: Risikoscore 1–5
+// =======================
 const RiskScoreCard: React.FC<{ result: AnalysisResult }> = ({ result }) => {
   const rawScore = result.risk_score_0_to_10 ?? 0;
-
   const category = mapScoreToCategory(rawScore);
-  const categoryLabel = getCategoryLabel(category);
-  const categoryColor = getCategoryColor(category);
 
-  // Balkenbreite für 1–5
-  const barWidth = (category / 5) * 100;
+  // Marker-Position exakt auf der Zahl: 1 → 0%, 2 → 25%, 3 → 50%, 4 → 75%, 5 → 100%
+  const markerPositionPercent = ((category - 1) / 4) * 100;
 
   return (
     <div className="space-y-3">
@@ -87,21 +54,19 @@ const RiskScoreCard: React.FC<{ result: AnalysisResult }> = ({ result }) => {
           </span>
           <span className="text-xs text-slate-500">/ 5</span>
         </div>
-        <div className="flex flex-col items-end gap-1">
-          <span
-            className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[11px] font-semibold text-white leading-none min-h-[20px] ${categoryColor}`}
-          >
-            {categoryLabel}
-          </span>
-        </div>
       </div>
 
-      {/* Balkenanzeige 1–5 */}
+      {/* Balkenanzeige 1–5 mit vollem Gradient + Marker-Strich */}
       <div className="mt-1">
-        <div className="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden">
+        <div className="relative w-full">
+          {/* Vollbreite-Gradient */}
+          <div className="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden">
+            <div className="h-full w-full rounded-full bg-gradient-to-r from-green-500 via-amber-500 to-red-500" />
+          </div>
+          {/* Marker */}
           <div
-            className="h-full rounded-full bg-gradient-to-r from-green-500 via-amber-500 to-red-500"
-            style={{ width: `${barWidth}%` }}
+            className="absolute top-[-3px] h-4 w-[2px] bg-slate-900"
+            style={{ left: `calc(${markerPositionPercent}% - 1px)` }}
           />
         </div>
         <div className="flex justify-between text-[10px] text-slate-400 mt-1">
@@ -114,6 +79,9 @@ const RiskScoreCard: React.FC<{ result: AnalysisResult }> = ({ result }) => {
   );
 };
 
+// =======================
+// SWOT-Grid (Seite 2)
+// =======================
 const SWOTGrid: React.FC<{ swot: SWOT }> = ({ swot }) => {
   const renderList = (items: string[]) =>
     items && items.length ? (
@@ -163,8 +131,9 @@ const App: React.FC = () => {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // A4-Report-Container für PDF-Export
-  const resultRef = useRef<HTMLDivElement | null>(null);
+  // Zwei A4-Seiten für PDF-Export
+  const page1Ref = useRef<HTMLDivElement | null>(null);
+  const page2Ref = useRef<HTMLDivElement | null>(null);
 
   const handleFile = (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -209,28 +178,37 @@ const App: React.FC = () => {
   };
 
   const handleExportPdf = async () => {
-    if (!result || !resultRef.current) {
+    if (!result || !page1Ref.current || !page2Ref.current) {
       return;
     }
 
     try {
-      const element = resultRef.current;
-
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-      });
-
-      const imgData = canvas.toDataURL("image/png");
-
       const pdf = new jsPDF("p", "mm", "a4");
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
 
-      // report-a4 hat exakt A4-Seitenverhältnis (595 x 842 px),
-      // daher skalieren wir das Bild einfach auf die komplette Seite.
-      pdf.addImage(imgData, "PNG", 0, 0, pageWidth, pageHeight);
+      // Seite 1
+      {
+        const canvas1 = await html2canvas(page1Ref.current, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: "#ffffff",
+        });
+        const imgData1 = canvas1.toDataURL("image/png");
+        pdf.addImage(imgData1, "PNG", 0, 0, pageWidth, pageHeight);
+      }
+
+      // Seite 2
+      {
+        const canvas2 = await html2canvas(page2Ref.current, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: "#ffffff",
+        });
+        const imgData2 = canvas2.toDataURL("image/png");
+        pdf.addPage();
+        pdf.addImage(imgData2, "PNG", 0, 0, pageWidth, pageHeight);
+      }
 
       const filename = `CreditRisk_Report_${new Date()
         .toISOString()
@@ -345,9 +323,9 @@ const App: React.FC = () => {
               </button>
             </div>
 
-            {/* A4-Seite im InDesign-Stil – 595 x 842 px */}
+            {/* Seite 1: Score + verbale Einschätzung + Downgrade-Treiber */}
             <div className="flex justify-center">
-              <div ref={resultRef} className="report-a4">
+              <div ref={page1Ref} className="report-a4">
                 <div className="report-inner text-[11px]">
                   {/* Kopfbereich */}
                   <header className="flex items-start justify-between mb-4">
@@ -375,44 +353,77 @@ const App: React.FC = () => {
                   </header>
 
                   {/* Credit-Deterioration-Analyse */}
-                  <section className="mt-4 mb-6">
+                  <section className="mt-4">
                     <h3 className="report-section-title mb-2">
                       Credit-Deterioration-Analyse
                     </h3>
 
                     <div className="report-panel">
-                      <p className="report-body-text font-semibold mb-2">
-                        Downgrade-Risikokategorie (1–5)
-                      </p>
+                      {/* Score */}
+                      <div className="mb-4">
+                        <p className="report-body-text font-semibold mb-2">
+                          Downgrade-Risikokategorie (1–5)
+                        </p>
+                        <RiskScoreCard result={result} />
+                      </div>
 
-                      <div className="grid grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-6 items-start">
-                        {/* Links: Score + verbale Einschätzung */}
-                        <div className="flex flex-col gap-3">
-                          <RiskScoreCard result={result} />
-                          <p className="report-body-text mt-2 whitespace-pre-line">
-                            {result.overall_risk_assessment_text}
-                          </p>
-                        </div>
+                      {/* Verbale Gesamteinschätzung */}
+                      <div className="mb-4">
+                        <p className="report-body-text whitespace-pre-line">
+                          {result.overall_risk_assessment_text}
+                        </p>
+                      </div>
 
-                        {/* Rechts: Downgrade-Treiber */}
-                        <div>
-                          <p className="report-body-text font-semibold mb-1">
-                            Potentielle Downgrade-Treiber
-                          </p>
-                          <ul className="report-list list-disc list-outside pl-4 space-y-1">
-                            {(result.key_downgrade_drivers || []).map(
-                              (item, idx) => (
-                                <li key={idx}>{item}</li>
-                              )
-                            )}
-                          </ul>
-                        </div>
+                      {/* Downgrade-Treiber */}
+                      <div>
+                        <p className="report-body-text font-semibold mb-1">
+                          Potentielle Downgrade-Treiber
+                        </p>
+                        <ul className="report-list list-disc list-outside pl-4 space-y-1">
+                          {(result.key_downgrade_drivers || []).map(
+                            (item, idx) => (
+                              <li key={idx}>{item}</li>
+                            )
+                          )}
+                        </ul>
                       </div>
                     </div>
                   </section>
+                </div>
+              </div>
+            </div>
+
+            {/* Seite 2: SWOT-Analyse */}
+            <div className="flex justify-center mt-8">
+              <div ref={page2Ref} className="report-a4">
+                <div className="report-inner text-[11px]">
+                  {/* Kopfbereich (wiederholt) */}
+                  <header className="flex items-start justify-between mb-4">
+                    <div>
+                      <h2 className="report-title">Business Risk Report</h2>
+
+                      <div className="mb-1 flex items-center">
+                        <span className="report-company-label">
+                          Unternehmen:
+                        </span>
+                        <span className="report-company-name">
+                          {result.company_name || "–"}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center">
+                        <span className="report-fy-label">Geschäftsjahr:</span>
+                        <span className="report-fy-value">
+                          {result.company_fiscal_year || "–"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="report-brand">CreditTrend&nbsp;AI</div>
+                  </header>
 
                   {/* SWOT-Analyse */}
-                  <section className="mt-auto">
+                  <section className="mt-4">
                     <h3 className="report-section-title mb-3">
                       SWOT-Analyse Business Risk
                     </h3>
