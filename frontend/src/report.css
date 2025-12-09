@@ -2,11 +2,11 @@
    ===============   FONTS FÜR DEN REPORT (PIXELGENAU)   =============
    =================================================================== */
 
-/* OpenSans Condensed Light – neuer Body-Font */
+/* OpenSans Medium – neuer Body-Font */
 @font-face {
-  font-family: "OpenSans Condensed";
-  src: url("/fonts/OpenSans_Condensed-Light.ttf") format("truetype");
-  font-weight: 300;
+  font-family: "OpenSans Medium";
+  src: url("/fonts/OpenSans-Medium.ttf") format("truetype");
+  font-weight: 500;
   font-style: normal;
 }
 
@@ -32,8 +32,7 @@
   overflow: hidden;
   color: #111827;
 
-  /* Neuer Body-Font */
-  font-family: "OpenSans Condensed", system-ui, -apple-system,
+  font-family: "OpenSans Medium", system-ui, -apple-system,
     BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -85,9 +84,7 @@
 
 .report-fy-value {
   font-size: 11px;
-
-  /* Body-Font */
-  font-family: "OpenSans Condensed", system-ui, -apple-system,
+  font-family: "OpenSans Medium", system-ui, -apple-system,
     BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -124,8 +121,7 @@
   font-size: 10px;
   line-height: 1.35;
 
-  /* Neuer Body-Font */
-  font-family: "OpenSans Condensed", system-ui, -apple-system,
+  font-family: "OpenSans Medium", system-ui, -apple-system,
     BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -134,8 +130,7 @@
   line-height: 1.3;
   padding-left: 16px;
 
-  /* Neuer Body-Font */
-  font-family: "OpenSans Condensed", system-ui, -apple-system,
+  font-family: "OpenSans Medium", system-ui, -apple-system,
     BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -196,8 +191,7 @@
   margin: 0;
   padding-left: 14px;
 
-  /* Neuer Body-Font */
-  font-family: "OpenSans Condensed", system-ui, -apple-system,
+  font-family: "OpenSans Medium", system-ui, -apple-system,
     BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -210,7 +204,6 @@
   color: #9ca3af;
   font-size: 10px;
 
-  /* Neuer Body-Font */
-  font-family: "OpenSans Condensed", system-ui, -apple-system,
+  font-family: "OpenSans Medium", system-ui, -apple-system,
     BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
