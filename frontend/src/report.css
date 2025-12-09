@@ -2,10 +2,10 @@
    ===============   FONTS FÜR DEN REPORT (PIXELGENAU)   =============
    =================================================================== */
 
-/* Minion Pro Regular – Fließtext */
+/* Archivo Black – neuer Body-Font */
 @font-face {
-  font-family: "Minion Pro";
-  src: url("/fonts/MinionPro-Regular.otf") format("opentype");
+  font-family: "Archivo Body";
+  src: url("/fonts/ArchivoBlack-Regular.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
 }
@@ -31,7 +31,10 @@
   box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
   overflow: hidden;
   color: #111827;
-  font-family: "Minion Pro", Georgia, "Times New Roman", serif;
+
+  /* Neuer Body-Font */
+  font-family: "Archivo Body", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
 }
 
 .report-inner {
@@ -82,6 +85,10 @@
 
 .report-fy-value {
   font-size: 11px;
+
+  /* Body-Font */
+  font-family: "Archivo Body", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
 }
 
 .report-brand {
@@ -115,12 +122,21 @@
 
 .report-body-text {
   font-size: 10px;
-  font-family: "Minion Pro", Georgia, "Times New Roman", serif;
+  line-height: 1.35;
+
+  /* Neuer Body-Font */
+  font-family: "Archivo Body", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
 }
 
 .report-list {
   font-size: 10px;
-  font-family: "Minion Pro", Georgia, "Times New Roman", serif;
+  line-height: 1.3;
+  padding-left: 16px;
+
+  /* Neuer Body-Font */
+  font-family: "Archivo Body", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
 }
 
 
@@ -138,9 +154,9 @@
 .swot-card {
   display: flex;
   flex-direction: column;
-  min-height: 130px; /* bei Bedarf anpassen */
   border-radius: 2px;
   overflow: hidden;
+  min-height: 130px; /* bei Bedarf erhöhen */
 }
 
 /* Titelstreifen */
@@ -165,21 +181,26 @@
   padding: 8px 10px;
 }
 
-/* Listenstil */
 .swot-list {
   list-style-type: disc;
-  padding-left: 16px;
   margin: 0;
+  padding-left: 14px;
+
+  /* Neuer Body-Font */
+  font-family: "Archivo Body", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
 }
 
 .swot-list li {
   margin-bottom: 2px;
   line-height: 1.25;
-  font-family: "Minion Pro", Georgia, "Times New Roman", serif;
 }
 
 .swot-empty {
   color: #9ca3af;
   font-size: 10px;
-  font-family: "Minion Pro", Georgia, "Times New Roman", serif;
+
+  /* Neuer Body-Font */
+  font-family: "Archivo Body", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
 }
