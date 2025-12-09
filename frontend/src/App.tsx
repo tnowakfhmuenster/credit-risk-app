@@ -2,6 +2,8 @@ import React, { useState, useRef } from "react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
+import "./report.css";
+
 type SWOT = {
   strengths: string[];
   weaknesses: string[];
@@ -26,11 +28,11 @@ const mapScoreToCategory = (score: number): number => {
   const rounded = Math.round(score);
   const clamped = Math.min(10, Math.max(0, rounded));
 
-  if (clamped <= 2) return 1;       // gering
-  if (clamped === 3) return 2;      // moderat
-  if (clamped === 4) return 3;      // erhöht
-  if (clamped <= 6) return 4;       // hoch (5-6)
-  return 5;                         // sehr hoch (7-10)
+  if (clamped <= 2) return 1; // gering
+  if (clamped === 3) return 2; // moderat
+  if (clamped === 4) return 3; // erhöht
+  if (clamped <= 6) return 4; // hoch (5-6)
+  return 5; // sehr hoch (7-10)
 };
 
 const getCategoryLabel = (cat: number): string => {
@@ -65,10 +67,9 @@ const getCategoryColor = (cat: number): string => {
   }
 };
 
-// Komponente für den Risikoscore (Band 1–5 + Anzeige des Rohscores 0–10)
+// Komponente für den Risikoscore (nur 1–5 sichtbar)
 const RiskScoreCard: React.FC<{ result: AnalysisResult }> = ({ result }) => {
   const rawScore = result.risk_score_0_to_10 ?? 0;
-  const rawScoreRounded = Math.round(rawScore);
 
   const category = mapScoreToCategory(rawScore);
   const categoryLabel = getCategoryLabel(category);
@@ -92,9 +93,6 @@ const RiskScoreCard: React.FC<{ result: AnalysisResult }> = ({ result }) => {
           >
             {categoryLabel}
           </span>
-          <span className="text-[10px] text-slate-400 mt-1">
-            Modellscore: {rawScoreRounded} / 10
-          </span>
         </div>
       </div>
 
@@ -107,66 +105,53 @@ const RiskScoreCard: React.FC<{ result: AnalysisResult }> = ({ result }) => {
           />
         </div>
         <div className="flex justify-between text-[10px] text-slate-400 mt-1">
-          <span>1</span>
-          <span>3</span>
-          <span>5</span>
+          {[1, 2, 3, 4, 5].map((n) => (
+            <span key={n}>{n}</span>
+          ))}
         </div>
       </div>
-
-      <p className="text-[11px] text-slate-500 mt-1">
-        Skala 1–5 (gering bis sehr hoch), abgeleitet aus einem internen
-        Modellscore von 0–10:
-        {" "}
-        <span className="font-medium">
-          0–2 → 1, 3 → 2, 4 → 3, 5–6 → 4, 7–10 → 5
-        </span>
-        .
-      </p>
     </div>
   );
 };
 
-// Komponente für SWOT-Grid
 const SWOTGrid: React.FC<{ swot: SWOT }> = ({ swot }) => {
-  const cellClass =
-    "rounded-xl border border-slate-200 bg-slate-50 p-3 flex flex-col gap-2";
-
   const renderList = (items: string[]) =>
     items && items.length ? (
-      <ul className="list-disc list-outside pl-4 text-sm text-slate-600 space-y-1">
+      <ul className="swot-list">
         {items.map((i, idx) => (
           <li key={idx}>{i}</li>
         ))}
       </ul>
     ) : (
-      <p className="text-sm text-slate-400">Keine Punkte erkannt.</p>
+      <p className="swot-empty">Keine Punkte erkannt.</p>
     );
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-      <div className={cellClass}>
-        <h4 className="font-semibold text-emerald-700 text-[13px]">
-          Stärken
-        </h4>
-        {renderList(swot.strengths)}
+    <div className="swot-grid">
+      {/* Stärken */}
+      <div className="swot-card">
+        <div className="swot-card-title swot-title--strengths">Stärken</div>
+        <div className="swot-card-body">{renderList(swot.strengths)}</div>
       </div>
-      <div className={cellClass}>
-        <h4 className="font-semibold text-rose-700 text-[13px]">
-          Schwächen
-        </h4>
-        {renderList(swot.weaknesses)}
+
+      {/* Schwächen */}
+      <div className="swot-card">
+        <div className="swot-card-title swot-title--weaknesses">Schwächen</div>
+        <div className="swot-card-body">{renderList(swot.weaknesses)}</div>
       </div>
-      <div className={cellClass}>
-        <h4 className="font-semibold text-sky-700 text-[13px]">
+
+      {/* Chancen */}
+      <div className="swot-card">
+        <div className="swot-card-title swot-title--opportunities">
           Chancen
-        </h4>
-        {renderList(swot.opportunities)}
+        </div>
+        <div className="swot-card-body">{renderList(swot.opportunities)}</div>
       </div>
-      <div className={cellClass}>
-        <h4 className="font-semibold text-amber-700 text-[13px]">
-          Risiken
-        </h4>
-        {renderList(swot.threats)}
+
+      {/* Risiken */}
+      <div className="swot-card">
+        <div className="swot-card-title swot-title--threats">Risiken</div>
+        <div className="swot-card-body">{renderList(swot.threats)}</div>
       </div>
     </div>
   );
@@ -178,7 +163,7 @@ const App: React.FC = () => {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Result-Container inkl. Überschrift, damit sie auch im PDF ist
+  // A4-Report-Container für PDF-Export
   const resultRef = useRef<HTMLDivElement | null>(null);
 
   const handleFile = (files: FileList | null) => {
@@ -217,7 +202,7 @@ const App: React.FC = () => {
       const data = (await res.json()) as AnalysisResult;
       setResult(data);
     } catch (e: any) {
-      setError(e.message || "Unbekannter Fehler.");
+      setError(e?.message || "Unbekannter Fehler.");
     } finally {
       setLoading(false);
     }
@@ -234,6 +219,7 @@ const App: React.FC = () => {
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
+        backgroundColor: "#ffffff",
       });
 
       const imgData = canvas.toDataURL("image/png");
@@ -242,26 +228,9 @@ const App: React.FC = () => {
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
 
-      const imgWidth = pageWidth - 20;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-      const marginTop = 10;
-
-      if (imgHeight <= pageHeight - marginTop * 2) {
-        pdf.addImage(imgData, "PNG", 10, marginTop, imgWidth, imgHeight);
-      } else {
-        let position = marginTop;
-        let remainingHeight = imgHeight;
-
-        while (remainingHeight > 0) {
-          pdf.addImage(imgData, "PNG", 10, position, imgWidth, imgHeight);
-          remainingHeight -= pageHeight;
-          if (remainingHeight > 0) {
-            pdf.addPage();
-            position = marginTop;
-          }
-        }
-      }
+      // report-a4 hat exakt A4-Seitenverhältnis (595 x 842 px),
+      // daher skalieren wir das Bild einfach auf die komplette Seite.
+      pdf.addImage(imgData, "PNG", 0, 0, pageWidth, pageHeight);
 
       const filename = `CreditRisk_Report_${new Date()
         .toISOString()
@@ -367,7 +336,7 @@ const App: React.FC = () => {
         {/* Ergebnisbereich + PDF-Button */}
         {result && (
           <>
-            <div className="flex justify-end">
+            <div className="flex justify-end mb-4">
               <button
                 onClick={handleExportPdf}
                 className="inline-flex items-center px-4 py-2 rounded-xl text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 shadow-sm"
@@ -376,62 +345,90 @@ const App: React.FC = () => {
               </button>
             </div>
 
-            {/* Dieser Container kommt vollständig in den PDF-Export */}
-            <div ref={resultRef} className="space-y-4">
-              <h2 className="text-xl font-semibold text-slate-900">
-                Business Risk Report
-              </h2>
-              <p className="text-sm text-slate-700">
-                <span className="font-medium">Unternehmen:</span>{" "}
-                {result.company_name || "–"}
-              </p>
-              <p className="text-sm text-slate-700">
-                <span className="font-medium">Geschäftsjahr:</span>{" "}
-                {result.company_fiscal_year || "–"}
-              </p>
-
-              <section className="space-y-6">
-                {/* Credit-Deterioration-Analyse (Score & verbale Einschätzung) */}
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4">
-                  <h3 className="text-md font-semibold text-slate-900">
-                    Credit-Deterioration-Analyse
-                  </h3>
-
-                  <div className="space-y-4">
+            {/* A4-Seite im InDesign-Stil – 595 x 842 px */}
+            <div className="flex justify-center">
+              <div ref={resultRef} className="report-a4">
+                <div className="report-inner text-[11px]">
+                  {/* Kopfbereich */}
+                  <header className="flex items-start justify-between mb-4">
                     <div>
-                      <h4 className="text-sm font-medium text-slate-800 mb-1">
-                        Downgrade-Risiko-Kategorie (1–5)
-                      </h4>
-                      <RiskScoreCard result={result} />
+                      <h2 className="report-title">Business Risk Report</h2>
+
+                      <div className="mb-1 flex items-center">
+                        <span className="report-company-label">
+                          Unternehmen:
+                        </span>
+                        <span className="report-company-name">
+                          {result.company_name || "–"}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center">
+                        <span className="report-fy-label">Geschäftsjahr:</span>
+                        <span className="report-fy-value">
+                          {result.company_fiscal_year || "–"}
+                        </span>
+                      </div>
                     </div>
 
-                    <div>
-                      <p className="text-sm text-slate-600">
-                        {result.overall_risk_assessment_text}
+                    <div className="report-brand">CreditTrend&nbsp;AI</div>
+                  </header>
+
+                  {/* Credit-Deterioration-Analyse */}
+                  <section className="mt-4 mb-6">
+                    <h3 className="report-section-title mb-2">
+                      Credit-Deterioration-Analyse
+                    </h3>
+
+                    <div className="report-panel">
+                      <p className="report-body-text font-semibold mb-2">
+                        Downgrade-Risikokategorie (1–5)
                       </p>
-                    </div>
 
-                    <div>
-                      <h4 className="text-sm font-medium text-slate-800 mb-1">
-                        Potentielle Downgrade-Treiber
-                      </h4>
-                      <ul className="list-disc list-outside pl-4 text-sm text-slate-600 space-y-1">
-                        {result.key_downgrade_drivers.map((item, idx) => (
-                          <li key={idx}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
+                      <div className="grid grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-6 items-start">
+                        {/* Links: Score + verbale Einschätzung */}
+                        <div className="flex flex-col gap-3">
+                          <RiskScoreCard result={result} />
+                          <p className="report-body-text mt-2 whitespace-pre-line">
+                            {result.overall_risk_assessment_text}
+                          </p>
+                        </div>
 
-                {/* SWOT */}
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                  <h3 className="text-md font-semibold text-slate-900 mb-3">
-                    SWOT-Analyse Business Risk
-                  </h3>
-                  <SWOTGrid swot={result.swot} />
+                        {/* Rechts: Downgrade-Treiber */}
+                        <div>
+                          <p className="report-body-text font-semibold mb-1">
+                            Potentielle Downgrade-Treiber
+                          </p>
+                          <ul className="report-list list-disc list-outside pl-4 space-y-1">
+                            {(result.key_downgrade_drivers || []).map(
+                              (item, idx) => (
+                                <li key={idx}>{item}</li>
+                              )
+                            )}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+
+                  {/* SWOT-Analyse */}
+                  <section className="mt-auto">
+                    <h3 className="report-section-title mb-3">
+                      SWOT-Analyse Business Risk
+                    </h3>
+                    <SWOTGrid
+                      swot={
+                        result.swot || {
+                          strengths: [],
+                          weaknesses: [],
+                          opportunities: [],
+                          threats: [],
+                        }
+                      }
+                    />
+                  </section>
                 </div>
-              </section>
+              </div>
             </div>
           </>
         )}

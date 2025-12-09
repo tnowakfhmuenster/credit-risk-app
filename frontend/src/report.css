@@ -1,0 +1,180 @@
+/* ===================================================================
+   ===============   FONTS FÜR DEN REPORT (PIXELGENAU)   =============
+   =================================================================== */
+
+/* Minion Pro Regular – Fließtext */
+@font-face {
+  font-family: "Minion Pro";
+  src: url("/fonts/MinionPro-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+}
+
+/* Roboto Black – Titel, Labels, Zahlen */
+@font-face {
+  font-family: "Roboto Report";
+  src: url("/fonts/Roboto-Black.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+}
+
+
+/* ===================================================================
+   =============  A4-SEITE (595 × 842 PX) – REPORT CANVAS  ===========
+   =================================================================== */
+
+.report-a4 {
+  width: 595px;
+  height: 842px;
+  background: #ffffff;
+  border: 1px solid #d4d4d8;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
+  overflow: hidden;
+  color: #111827;
+  font-family: "Minion Pro", Georgia, "Times New Roman", serif;
+}
+
+.report-inner {
+  padding: 32px 40px 40px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  line-height: 1.35;
+}
+
+
+/* ===================================================================
+   =====================   HEADER / TITELBEREICH   ===================
+   =================================================================== */
+
+.report-title {
+  font-family: "Roboto Report", system-ui, sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.report-company-label {
+  font-family: "Roboto Report", system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 6px;
+  background: #263184;
+  color: #ffffff;
+  border-radius: 2px;
+  margin-right: 4px;
+}
+
+.report-company-name {
+  font-family: "Roboto Report", system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.report-fy-label {
+  font-family: "Roboto Report", system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: #263184;
+  margin-right: 4px;
+}
+
+.report-fy-value {
+  font-size: 11px;
+}
+
+.report-brand {
+  font-family: "Roboto Report", system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+
+/* ===================================================================
+   =================  ABSCHNITTSÜBERSCHRIFTEN  =======================
+   =================================================================== */
+
+.report-section-title {
+  font-family: "Roboto Report", system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+
+/* ===================================================================
+   =====================  PANELS / LIGHTBOXEN  =======================
+   =================================================================== */
+
+.report-panel {
+  background: #eef4fb;
+  border-radius: 4px;
+  padding: 16px 20px;
+}
+
+.report-body-text {
+  font-size: 10px;
+}
+
+.report-list {
+  font-size: 10px;
+}
+
+
+/* ===================================================================
+   ========================  SWOT-GRID   ==============================
+   =================================================================== */
+
+.swot-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  font-size: 10px;
+}
+
+.swot-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 130px; /* später feinjustierbar */
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+/* Titelstreifen */
+.swot-card-title {
+  font-family: "Roboto Report", system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  color: #ffffff;
+}
+
+/* Farben exakt wie im InDesign */
+.swot-title--strengths { background-color: #3fa535; }
+.swot-title--weaknesses { background-color: #cd1719; }
+.swot-title--opportunities { background-color: #263184; }
+.swot-title--threats { background-color: #4161ab; }
+
+/* Body */
+.swot-card-body {
+  flex: 1;
+  background-color: #e5f1fb;
+  padding: 8px 10px;
+}
+
+/* Listenstil */
+.swot-list {
+  list-style-type: disc;
+  padding-left: 16px;
+  margin: 0;
+}
+
+.swot-list li {
+  margin-bottom: 2px;
+  line-height: 1.25;
+}
+
+.swot-empty {
+  color: #9ca3af;
+  font-size: 10px;
+}
