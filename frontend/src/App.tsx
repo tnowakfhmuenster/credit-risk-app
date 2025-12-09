@@ -187,7 +187,6 @@ const App: React.FC = () => {
   };
 
   // Nach dem Rendern von Seite 2 prüfen wir, ob die SWOT-Seite überläuft.
-  // Wenn ja → dritte Seite aktivieren (Chancen & Risiken).
   useEffect(() => {
     if (!result) {
       setNeedsThirdPage(false);
@@ -210,20 +209,29 @@ const App: React.FC = () => {
     }
 
     try {
-      const pdf = new jsPDF("p", "mm", "a4");
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
+      // Seite 1 zuerst rendern, um Format für das PDF zu bestimmen
+      const canvas1 = await html2canvas(page1Ref.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+      });
+      const imgData1 = canvas1.toDataURL("image/png");
 
-      // Seite 1
-      {
-        const canvas1 = await html2canvas(page1Ref.current, {
-          scale: 2,
-          useCORS: true,
-          backgroundColor: "#ffffff",
-        });
-        const imgData1 = canvas1.toDataURL("image/png");
-        pdf.addImage(imgData1, "PNG", 0, 0, pageWidth, pageHeight);
-      }
+      // PDF exakt in Canvas-Pixelgröße anlegen → 1:1 wie im Browser
+      const pdf = new jsPDF({
+        orientation: canvas1.width > canvas1.height ? "l" : "p",
+        unit: "px",
+        format: [canvas1.width, canvas1.height],
+      });
+
+      pdf.addImage(
+        imgData1,
+        "PNG",
+        0,
+        0,
+        canvas1.width,
+        canvas1.height
+      );
 
       // Seite 2
       {
@@ -234,7 +242,14 @@ const App: React.FC = () => {
         });
         const imgData2 = canvas2.toDataURL("image/png");
         pdf.addPage();
-        pdf.addImage(imgData2, "PNG", 0, 0, pageWidth, pageHeight);
+        pdf.addImage(
+          imgData2,
+          "PNG",
+          0,
+          0,
+          canvas2.width,
+          canvas2.height
+        );
       }
 
       // Seite 3 (nur Chancen & Risiken), nur wenn vorhanden
@@ -246,7 +261,14 @@ const App: React.FC = () => {
         });
         const imgData3 = canvas3.toDataURL("image/png");
         pdf.addPage();
-        pdf.addImage(imgData3, "PNG", 0, 0, pageWidth, pageHeight);
+        pdf.addImage(
+          imgData3,
+          "PNG",
+          0,
+          0,
+          canvas3.width,
+          canvas3.height
+        );
       }
 
       const filename = `CreditRisk_Report_${new Date()
