@@ -2,11 +2,11 @@
    ===============   FONTS FÜR DEN REPORT (PIXELGENAU)   =============
    =================================================================== */
 
-/* Archivo Black – neuer Body-Font */
+/* OpenSans Condensed Light – neuer Body-Font */
 @font-face {
-  font-family: "Archivo Body";
-  src: url("/fonts/ArchivoBlack-Regular.ttf") format("truetype");
-  font-weight: 400;
+  font-family: "OpenSans Condensed";
+  src: url("/fonts/OpenSans_Condensed-Light.ttf") format("truetype");
+  font-weight: 300;
   font-style: normal;
 }
 
@@ -33,8 +33,8 @@
   color: #111827;
 
   /* Neuer Body-Font */
-  font-family: "Archivo Body", system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", sans-serif;
+  font-family: "OpenSans Condensed", system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 .report-inner {
@@ -87,8 +87,8 @@
   font-size: 11px;
 
   /* Body-Font */
-  font-family: "Archivo Body", system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", sans-serif;
+  font-family: "OpenSans Condensed", system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 .report-brand {
@@ -125,8 +125,8 @@
   line-height: 1.35;
 
   /* Neuer Body-Font */
-  font-family: "Archivo Body", system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", sans-serif;
+  font-family: "OpenSans Condensed", system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 .report-list {
@@ -135,8 +135,8 @@
   padding-left: 16px;
 
   /* Neuer Body-Font */
-  font-family: "Archivo Body", system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", sans-serif;
+  font-family: "OpenSans Condensed", system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 
@@ -156,7 +156,7 @@
   flex-direction: column;
   border-radius: 2px;
   overflow: hidden;
-  min-height: 130px; /* bei Bedarf erhöhen */
+  min-height: 130px;
 }
 
 /* Titelstreifen */
@@ -168,11 +168,21 @@
   color: #ffffff;
 }
 
-/* Farben exakt wie im InDesign */
-.swot-title--strengths { background-color: #3fa535; }
-.swot-title--weaknesses { background-color: #cd1719; }
-.swot-title--opportunities { background-color: #263184; }
-.swot-title--threats { background-color: #4161ab; }
+.swot-title--strengths {
+  background-color: #3fa535;
+}
+
+.swot-title--weaknesses {
+  background-color: #cd1719;
+}
+
+.swot-title--opportunities {
+  background-color: #263184;
+}
+
+.swot-title--threats {
+  background-color: #4161ab;
+}
 
 /* Body */
 .swot-card-body {
@@ -187,8 +197,8 @@
   padding-left: 14px;
 
   /* Neuer Body-Font */
-  font-family: "Archivo Body", system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", sans-serif;
+  font-family: "OpenSans Condensed", system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 .swot-list li {
@@ -201,6 +211,6 @@
   font-size: 10px;
 
   /* Neuer Body-Font */
-  font-family: "Archivo Body", system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", sans-serif;
+  font-family: "OpenSans Condensed", system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
