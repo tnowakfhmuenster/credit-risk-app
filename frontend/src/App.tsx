@@ -58,11 +58,7 @@ const hexToRgb = (hex: string) => {
   const h = hex.replace("#", "").trim();
   const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
   const n = parseInt(full, 16);
-  return {
-    r: (n >> 16) & 255,
-    g: (n >> 8) & 255,
-    b: n & 255,
-  };
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
 };
 
 const rgbToHex = (r: number, g: number, b: number) => {
@@ -124,9 +120,9 @@ const RiskScoreCard: React.FC<{ result: AnalysisResult }> = ({ result }) => {
           <span className="text-xs text-slate-500">/ 5</span>
         </div>
 
-        {/* Verbale Risikoeinschätzung (Farbe passend zur Skala) */}
+        {/* Dezenter Risikokasten (Farbe passend zur Skala) */}
         <div
-          className="px-5 py-2 rounded-xl text-white font-semibold text-sm shadow-sm whitespace-nowrap"
+          className="px-3 py-1 rounded-lg text-xs font-medium text-white shadow-sm whitespace-nowrap"
           style={{ backgroundColor: badgeColor }}
           aria-label={`Risiko: ${label}`}
           title={`Risiko: ${label}`}
