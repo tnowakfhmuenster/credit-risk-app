@@ -42,6 +42,7 @@ const RiskScoreCard: React.FC<{ result: AnalysisResult }> = ({ result }) => {
   const rawScore = result.risk_score_0_to_10 ?? 0;
   const category = mapScoreToCategory(rawScore);
 
+  // Marker-Position exakt auf der Zahl: 1 → 0%, 2 → 25%, 3 → 50%, 4 → 75%, 5 → 100%
   const markerPositionPercent = ((category - 1) / 4) * 100;
 
   return (
@@ -55,11 +56,14 @@ const RiskScoreCard: React.FC<{ result: AnalysisResult }> = ({ result }) => {
         </div>
       </div>
 
+      {/* Balkenanzeige 1–5 mit vollem Gradient + Marker-Strich */}
       <div className="mt-1">
         <div className="relative w-full">
+          {/* Vollbreite-Gradient */}
           <div className="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden">
             <div className="h-full w-full rounded-full bg-gradient-to-r from-green-500 via-amber-500 to-red-500" />
           </div>
+          {/* Marker */}
           <div
             className="absolute top-[-3px] h-4 w-[2px] bg-slate-900"
             style={{ left: `calc(${markerPositionPercent}% - 1px)` }}
@@ -76,7 +80,7 @@ const RiskScoreCard: React.FC<{ result: AnalysisResult }> = ({ result }) => {
 };
 
 // =======================
-// SWOT-Grid
+// SWOT-Grid (zeigt einfach nur, was man ihm gibt)
 // =======================
 const SWOTGrid: React.FC<{ swot: SWOT }> = ({ swot }) => {
   const renderList = (items: string[] | undefined) => {
@@ -95,16 +99,19 @@ const SWOTGrid: React.FC<{ swot: SWOT }> = ({ swot }) => {
 
   return (
     <div className="swot-grid">
+      {/* Stärken */}
       <div className="swot-card">
         <div className="swot-card-title swot-title--strengths">Stärken</div>
         <div className="swot-card-body">{renderList(swot.strengths)}</div>
       </div>
 
+      {/* Schwächen */}
       <div className="swot-card">
         <div className="swot-card-title swot-title--weaknesses">Schwächen</div>
         <div className="swot-card-body">{renderList(swot.weaknesses)}</div>
       </div>
 
+      {/* Chancen */}
       <div className="swot-card">
         <div className="swot-card-title swot-title--opportunities">
           Chancen
@@ -112,6 +119,7 @@ const SWOTGrid: React.FC<{ swot: SWOT }> = ({ swot }) => {
         <div className="swot-card-body">{renderList(swot.opportunities)}</div>
       </div>
 
+      {/* Risiken */}
       <div className="swot-card">
         <div className="swot-card-title swot-title--threats">Risiken</div>
         <div className="swot-card-body">{renderList(swot.threats)}</div>
@@ -126,10 +134,12 @@ const App: React.FC = () => {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // A4-Seiten für PDF-Export
   const page1Ref = useRef<HTMLDivElement | null>(null);
   const page2Ref = useRef<HTMLDivElement | null>(null);
   const page3Ref = useRef<HTMLDivElement | null>(null);
 
+  // Flag: braucht SWOT eine dritte Seite (Chancen & Risiken)?
   const [needsThirdPage, setNeedsThirdPage] = useState(false);
 
   const handleFile = (files: FileList | null) => {
@@ -176,12 +186,14 @@ const App: React.FC = () => {
     }
   };
 
+  // Nach dem Rendern von Seite 2 prüfen wir, ob die SWOT-Seite überläuft.
   useEffect(() => {
     if (!result) {
       setNeedsThirdPage(false);
       return;
     }
-    if (!page2Ref.current || needsThirdPage) return;
+    if (!page2Ref.current) return;
+    if (needsThirdPage) return; // bereits gesplittet, nicht erneut prüfen
 
     const el = page2Ref.current;
     const hasOverflow = el.scrollHeight > el.clientHeight + 1;
@@ -192,13 +204,17 @@ const App: React.FC = () => {
   }, [result, needsThirdPage]);
 
   const handleExportPdf = async () => {
-    if (!result || !page1Ref.current || !page2Ref.current) return;
+    if (!result || !page1Ref.current || !page2Ref.current) {
+      return;
+    }
 
     try {
-      if ((document as any).fonts?.ready) {
+      // Sicherstellen, dass Webfonts geladen sind, bevor wir Screenshots machen
+      if ((document as any).fonts && (document as any).fonts.ready) {
         await (document as any).fonts.ready;
       }
 
+      // Seite 1 zuerst rendern, um Format für das PDF zu bestimmen
       const canvas1 = await html2canvas(page1Ref.current, {
         scale: 2,
         useCORS: true,
@@ -206,6 +222,7 @@ const App: React.FC = () => {
       });
       const imgData1 = canvas1.toDataURL("image/png");
 
+      // PDF exakt in Canvas-Pixelgröße anlegen → 1:1 wie im Browser
       const pdf = new jsPDF({
         orientation: canvas1.width > canvas1.height ? "l" : "p",
         unit: "px",
@@ -214,47 +231,41 @@ const App: React.FC = () => {
 
       pdf.addImage(imgData1, "PNG", 0, 0, canvas1.width, canvas1.height);
 
-      const canvas2 = await html2canvas(page2Ref.current, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-      });
-      pdf.addPage();
-      pdf.addImage(
-        canvas2.toDataURL("image/png"),
-        "PNG",
-        0,
-        0,
-        canvas2.width,
-        canvas2.height
-      );
+      // Seite 2
+      {
+        const canvas2 = await html2canvas(page2Ref.current, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: "#ffffff",
+        });
+        const imgData2 = canvas2.toDataURL("image/png");
+        pdf.addPage();
+        pdf.addImage(imgData2, "PNG", 0, 0, canvas2.width, canvas2.height);
+      }
 
+      // Seite 3 (nur Chancen & Risiken), nur wenn vorhanden
       if (page3Ref.current) {
         const canvas3 = await html2canvas(page3Ref.current, {
           scale: 2,
           useCORS: true,
           backgroundColor: "#ffffff",
         });
+        const imgData3 = canvas3.toDataURL("image/png");
         pdf.addPage();
-        pdf.addImage(
-          canvas3.toDataURL("image/png"),
-          "PNG",
-          0,
-          0,
-          canvas3.width,
-          canvas3.height
-        );
+        pdf.addImage(imgData3, "PNG", 0, 0, canvas3.width, canvas3.height);
       }
 
-      pdf.save(
-        `CreditRisk_Report_${new Date().toISOString().slice(0, 10)}.pdf`
-      );
+      const filename = `CreditRisk_Report_${new Date()
+        .toISOString()
+        .slice(0, 10)}.pdf`;
+      pdf.save(filename);
     } catch (err) {
       console.error("Fehler beim PDF-Export:", err);
       alert("Beim PDF-Export ist ein Fehler aufgetreten.");
     }
   };
 
+  // Sicheres SWOT-Objekt
   const safeSwot: SWOT = result?.swot || {
     strengths: [],
     weaknesses: [],
@@ -262,6 +273,9 @@ const App: React.FC = () => {
     threats: [],
   };
 
+  // Wenn eine dritte Seite nötig ist:
+  // Seite 2 → Stärken & Schwächen
+  // Seite 3 → Chancen & Risiken
   const swotForPage2: SWOT = needsThirdPage
     ? {
         strengths: safeSwot.strengths,
@@ -282,12 +296,14 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-100">
+      {/* Header */}
       <header className="border-b border-slate-200 bg-white/80 backdrop-blur">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-xl font-semibold text-slate-900">
               CreditRisk AI
             </h1>
+            {/* ✅ Text geändert */}
             <p className="text-sm text-slate-500">
               Automatisierte Risikoanalyse von Lageberichten für
               Kreditentscheidungen
@@ -296,11 +312,14 @@ const App: React.FC = () => {
         </div>
       </header>
 
+      {/* Content */}
       <main className="max-w-5xl mx-auto px-4 py-8 space-y-6">
+        {/* Upload Card */}
         <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
           <h2 className="text-lg font-semibold text-slate-900 mb-2">
             Lagebericht hochladen
           </h2>
+          {/* ✅ Text geändert */}
           <p className="text-sm text-slate-500 mb-4">
             Laden Sie einen Lagebericht (PDF-Datei) hoch und erhalten Sie
             innerhalb weniger Sekunden eine automatische Risikoanalyse für ein
@@ -316,8 +335,25 @@ const App: React.FC = () => {
             }}
             onClick={() => document.getElementById("file-input")?.click()}
           >
+            <svg
+              className="w-10 h-10 mb-3 text-blue-500"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.6}
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M3 15.75 7.5 11.25 12 15.75 16.5 11.25 21 15.75M4.5 4.5h15a1.5 1.5 0 0 1 1.5 1.5v12.75A1.5 1.5 0 0 1 19.5 20.25h-15A1.5 1.5 0 0 1 3 18.75V6A1.5 1.5 0 0 1 4.5 4.5z"
+              />
+            </svg>
             <p className="font-medium text-slate-800">
               PDF hier ablegen oder klicken
+            </p>
+            <p className="text-xs text-slate-500 mt-1">
+              Unterstützt wird eine einzelne PDF-Datei (Lagebericht).
             </p>
             <input
               id="file-input"
@@ -337,7 +373,7 @@ const App: React.FC = () => {
             <button
               onClick={handleUpload}
               disabled={!file || loading}
-              className="inline-flex items-center px-4 py-2 rounded-xl text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+              className="inline-flex items-center px-4 py-2 rounded-xl text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
             >
               {loading ? "Analyse läuft..." : "Analyse starten"}
             </button>
@@ -348,6 +384,175 @@ const App: React.FC = () => {
             )}
           </div>
         </section>
+
+        {/* Ergebnisbereich + PDF-Button */}
+        {result && (
+          <>
+            <div className="flex justify-end mb-4">
+              <button
+                onClick={handleExportPdf}
+                className="inline-flex items-center px-4 py-2 rounded-xl text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 shadow-sm"
+              >
+                Als PDF exportieren
+              </button>
+            </div>
+
+            {/* Seite 1: Score + verbale Einschätzung + Downgrade-Treiber */}
+            <div className="flex justify-center">
+              <div ref={page1Ref} className="report-a4">
+                <div className="report-inner text-[11px]">
+                  {/* Kopfbereich */}
+                  <header className="flex items-start justify-between mb-2">
+                    <div>
+                      <h2 className="report-title">Business Risk Report</h2>
+
+                      <div className="mb-1 flex items-center">
+                        <span className="report-company-label">
+                          Unternehmen:
+                        </span>
+                        <span className="report-company-name">
+                          {result.company_name || "–"}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center">
+                        <span className="report-fy-label">Geschäftsjahr:</span>
+                        <span className="report-fy-value">
+                          {result.company_fiscal_year || "–"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="report-brand">CreditTrend&nbsp;AI</div>
+                  </header>
+
+                  {/* Credit-Deterioration-Analyse */}
+                  <section className="mt-2">
+                    <h3 className="report-section-title mb-2">
+                      Credit-Deterioration-Analyse
+                    </h3>
+
+                    <div className="report-panel">
+                      {/* Score */}
+                      <div className="mb-4">
+                        <p className="report-body-text font-semibold mb-2">
+                          Downgrade-Risikokategorie (1–5)
+                        </p>
+                        <RiskScoreCard result={result} />
+                      </div>
+
+                      {/* Verbale Gesamteinschätzung */}
+                      <div className="mb-4">
+                        <p className="report-body-text whitespace-pre-line">
+                          {result.overall_risk_assessment_text}
+                        </p>
+                      </div>
+
+                      {/* Downgrade-Treiber */}
+                      <div>
+                        <p className="report-body-text font-semibold mb-1">
+                          Potentielle Downgrade-Treiber
+                        </p>
+                        <ul className="report-list list-disc list-outside space-y-1">
+                          {(result.key_downgrade_drivers || []).map(
+                            (item, idx) => (
+                              <li key={idx}>{item}</li>
+                            )
+                          )}
+                        </ul>
+                      </div>
+                    </div>
+                  </section>
+                </div>
+              </div>
+            </div>
+
+            {/* Seite 2: SWOT-Analyse (ggf. nur Stärken & Schwächen) */}
+            <div className="flex justify-center mt-8">
+              <div ref={page2Ref} className="report-a4">
+                <div className="report-inner text-[11px]">
+                  {/* Kopfbereich */}
+                  <header className="flex items-start justify-between mb-2">
+                    <div>
+                      <h2 className="report-title">Business Risk Report</h2>
+
+                      <div className="mb-1 flex items-center">
+                        <span className="report-company-label">
+                          Unternehmen:
+                        </span>
+                        <span className="report-company-name">
+                          {result.company_name || "–"}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center">
+                        <span className="report-fy-label">Geschäftsjahr:</span>
+                        <span className="report-fy-value">
+                          {result.company_fiscal_year || "–"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="report-brand">CreditTrend&nbsp;AI</div>
+                  </header>
+
+                  {/* SWOT-Analyse (Seite 2) */}
+                  <section className="mt-2">
+                    <h3 className="report-section-title mb-3">
+                      SWOT-Analyse Business Risk
+                      {needsThirdPage ? " – Teil 1" : ""}
+                    </h3>
+                    <SWOTGrid swot={swotForPage2} />
+                  </section>
+                </div>
+              </div>
+            </div>
+
+            {/* Seite 3: nur Chancen & Risiken, falls nötig */}
+            {needsThirdPage && swotForPage3 && (
+              <div className="flex justify-center mt-8">
+                <div ref={page3Ref} className="report-a4">
+                  <div className="report-inner text-[11px]">
+                    {/* Kopfbereich */}
+                    <header className="flex items-start justify-between mb-2">
+                      <div>
+                        <h2 className="report-title">Business Risk Report</h2>
+
+                        <div className="mb-1 flex items-center">
+                          <span className="report-company-label">
+                            Unternehmen:
+                          </span>
+                          <span className="report-company-name">
+                            {result.company_name || "–"}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center">
+                          <span className="report-fy-label">
+                            Geschäftsjahr:
+                          </span>
+                          <span className="report-fy-value">
+                            {result.company_fiscal_year || "–"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="report-brand">CreditTrend&nbsp;AI</div>
+                    </header>
+
+                    {/* SWOT-Analyse (Seite 3 – Chancen & Risiken) */}
+                    <section className="mt-2">
+                      <h3 className="report-section-title mb-3">
+                        SWOT-Analyse Business Risk – Teil 2
+                      </h3>
+                      <SWOTGrid swot={swotForPage3} />
+                    </section>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </main>
     </div>
   );
