@@ -35,8 +35,74 @@ const mapScoreToCategory = (score: number): number => {
   return 5; // sehr hoch (7-10)
 };
 
+const categoryToLabel = (category: number): string => {
+  switch (category) {
+    case 1:
+      return "gering";
+    case 2:
+      return "moderat";
+    case 3:
+      return "erhöht";
+    case 4:
+      return "hoch";
+    case 5:
+    default:
+      return "sehr hoch";
+  }
+};
+
 // =======================
-// Komponente: Risikoscore 1–5 mit Marker
+// Farbinterpolation passend zur Skala (grün -> amber -> rot)
+// =======================
+const hexToRgb = (hex: string) => {
+  const h = hex.replace("#", "").trim();
+  const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+  const n = parseInt(full, 16);
+  return {
+    r: (n >> 16) & 255,
+    g: (n >> 8) & 255,
+    b: n & 255,
+  };
+};
+
+const rgbToHex = (r: number, g: number, b: number) => {
+  const toHex = (x: number) => x.toString(16).padStart(2, "0");
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+};
+
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+
+const lerpColor = (c1: string, c2: string, t: number) => {
+  const a = hexToRgb(c1);
+  const b = hexToRgb(c2);
+  return rgbToHex(
+    Math.round(lerp(a.r, b.r, t)),
+    Math.round(lerp(a.g, b.g, t)),
+    Math.round(lerp(a.b, b.b, t))
+  );
+};
+
+// Tailwind-ähnliche Basisfarben (500er)
+const GREEN_500 = "#22c55e";
+const AMBER_500 = "#f59e0b";
+const RED_500 = "#ef4444";
+
+const getScaleColorForCategory = (category: number) => {
+  const c = Math.min(5, Math.max(1, category));
+  const percent = ((c - 1) / 4) * 100;
+
+  // 0..50: grün->amber, 50..100: amber->rot
+  if (percent <= 50) {
+    const t = percent / 50;
+    return lerpColor(GREEN_500, AMBER_500, t);
+  } else {
+    const t = (percent - 50) / 50;
+    return lerpColor(AMBER_500, RED_500, t);
+  }
+};
+
+// =======================
+// Komponente: Risikoscore 1–5 mit Marker + verbale Einschätzung
 // =======================
 const RiskScoreCard: React.FC<{ result: AnalysisResult }> = ({ result }) => {
   const rawScore = result.risk_score_0_to_10 ?? 0;
@@ -45,14 +111,27 @@ const RiskScoreCard: React.FC<{ result: AnalysisResult }> = ({ result }) => {
   // Marker-Position exakt auf der Zahl: 1 → 0%, 2 → 25%, 3 → 50%, 4 → 75%, 5 → 100%
   const markerPositionPercent = ((category - 1) / 4) * 100;
 
+  const label = categoryToLabel(category);
+  const badgeColor = getScaleColorForCategory(category);
+
   return (
     <div className="space-y-3">
-      <div className="flex items-baseline justify-between">
-        <div className="flex items-center gap-2">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-baseline gap-2">
           <span className="text-3xl font-semibold text-slate-900">
             {category}
           </span>
           <span className="text-xs text-slate-500">/ 5</span>
+        </div>
+
+        {/* Verbale Risikoeinschätzung (Farbe passend zur Skala) */}
+        <div
+          className="px-5 py-2 rounded-xl text-white font-semibold text-sm shadow-sm whitespace-nowrap"
+          style={{ backgroundColor: badgeColor }}
+          aria-label={`Risiko: ${label}`}
+          title={`Risiko: ${label}`}
+        >
+          Risiko: {label}
         </div>
       </div>
 
@@ -303,7 +382,6 @@ const App: React.FC = () => {
             <h1 className="text-xl font-semibold text-slate-900">
               CreditRisk AI
             </h1>
-            {/* ✅ Text geändert */}
             <p className="text-sm text-slate-500">
               Automatisierte Risikoanalyse von Lageberichten für
               Kreditentscheidungen
@@ -319,7 +397,6 @@ const App: React.FC = () => {
           <h2 className="text-lg font-semibold text-slate-900 mb-2">
             Lagebericht hochladen
           </h2>
-          {/* ✅ Text geändert */}
           <p className="text-sm text-slate-500 mb-4">
             Laden Sie einen Lagebericht (PDF-Datei) hoch und erhalten Sie
             innerhalb weniger Sekunden eine automatische Risikoanalyse für ein
